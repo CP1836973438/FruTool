@@ -1,0 +1,7 @@
+# Runtime dependencies — keep in sync with pyproject.toml [project.dependencies]
+# PyQt6 and PyQt6-Qt6 MUST share the same version (mismatch causes Qt/QML bugs).
+PyQt6==6.8.1
+PyQt6-Qt6==6.8.1
+pyinstaller>=6.0
+py7zr>=0.21
+rarfile>=4.2

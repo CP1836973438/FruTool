@@ -1,0 +1,17 @@
+.venv/
+.qt/
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.spec.bak
+
+# Runtime data
+logs/
+*.log
+fru_backup/
+.pytest_cache/
+.coverage
+
+# IDE
+.idea/
