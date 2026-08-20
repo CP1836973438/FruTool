@@ -1,4 +1,5 @@
 .venv/
+.venv-pack/
 .qt/
 __pycache__/
 *.py[cod]

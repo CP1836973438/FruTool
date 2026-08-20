@@ -1,6 +1,8 @@
 """Application constants and paths."""
 from __future__ import annotations
 
+import glob
+import json
 import os
 import shutil
 import sys
@@ -22,7 +24,9 @@ LOG_DIR = os.path.join(BASE_DIR, "logs")
 PCLE_DIR_NAME = "PCLE"
 TOPO_CACHE_DIR = os.path.join(BACKUP_DIR, "topo_cache")
 TOPO_INDEX_JSON = os.path.join(LOG_DIR, "topo_index.json")
+TOPO_SCRIPT_PREF_JSON = os.path.join(LOG_DIR, "topo_prefs.json")
 APP_ICON_NAME = "FRUTool.ico"
+PCIE_EEPROM_TOOL_GLOB = "PcieEEpromTool*.py"
 
 # PCLE archive naming: manufacturer in filename; platform codes (机型) are optional hints.
 PCLE_MANUFACTURERS: tuple[str, ...] = (
@@ -79,6 +83,9 @@ def ipmitool_candidate_paths() -> list[str]:
 
 def resolve_pcie_eeprom_tool() -> str:
     """Resolved topology script path (ipmitool/ first, then exe root, then bundled)."""
+    tools = list_pcie_eeprom_tools()
+    if tools:
+        return str(tools[0]["path"])
     search_groups = (
         resource_candidates(IPMITOOL_DIR_NAME, PCIE_EEPROM_TOOL_NAME),
         resource_candidates(PCIE_EEPROM_TOOL_NAME),
@@ -88,6 +95,91 @@ def resolve_pcie_eeprom_tool() -> str:
             if os.path.isfile(path):
                 return os.path.normpath(path)
     return os.path.normpath(os.path.join(BASE_DIR, PCIE_EEPROM_TOOL_NAME))
+
+
+def _pcie_script_search_dirs() -> list[str]:
+    """Directories to scan for PcieEEpromTool*.py (exe override first, then bundled)."""
+    dirs: list[str] = []
+    seen: set[str] = set()
+    for path in (
+        *resource_candidates(IPMITOOL_DIR_NAME),
+        BASE_DIR,
+        *( [bundled_dir()] if bundled_dir() else [] ),
+    ):
+        if not path:
+            continue
+        norm = os.path.normpath(path)
+        if os.path.isdir(norm) and norm not in seen:
+            seen.add(norm)
+            dirs.append(norm)
+    return dirs
+
+
+def _pcie_script_location_label(script_dir: str) -> str:
+    norm = os.path.normpath(script_dir)
+    base = os.path.normpath(BASE_DIR)
+    bundled = bundled_dir()
+    if os.path.basename(norm).casefold() == IPMITOOL_DIR_NAME.casefold():
+        if bundled and norm.startswith(os.path.normpath(bundled)):
+            return "内置 ipmitool/"
+        return "ipmitool/"
+    if norm == base:
+        return "根目录"
+    if bundled and norm == os.path.normpath(bundled):
+        return "内置根目录"
+    return os.path.basename(norm) or "其它"
+
+
+def list_pcie_eeprom_tools() -> list[dict[str, str]]:
+    """Scan for PcieEEpromTool*.py; standard name first, then alphabetical."""
+    found: dict[str, dict[str, str]] = {}
+    for directory in _pcie_script_search_dirs():
+        pattern = os.path.join(directory, PCIE_EEPROM_TOOL_GLOB)
+        for match in glob.glob(pattern):
+            if not os.path.isfile(match):
+                continue
+            path = os.path.normpath(os.path.abspath(match))
+            if path in found:
+                continue
+            name = os.path.basename(path)
+            loc = _pcie_script_location_label(os.path.dirname(path))
+            found[path] = {
+                "id": path,
+                "label": f"{name} · {loc}",
+                "path": path,
+                "name": name,
+            }
+
+    def sort_key(item: dict[str, str]) -> tuple:
+        name = item["name"]
+        path = item["path"]
+        exact = 0 if name == PCIE_EEPROM_TOOL_NAME else 1
+        in_base = 0 if path.startswith(os.path.normpath(BASE_DIR) + os.sep) or path == os.path.normpath(BASE_DIR) else 1
+        return (exact, in_base, name.casefold(), path.casefold())
+
+    return sorted(found.values(), key=sort_key)
+
+
+def load_topo_script_pref() -> str:
+    """Last selected topology script path, or empty."""
+    try:
+        with open(TOPO_SCRIPT_PREF_JSON, encoding="utf-8") as fh:
+            data = json.load(fh)
+        path = str(data.get("script_path", "")).strip()
+        return os.path.normpath(path) if path else ""
+    except (OSError, ValueError, TypeError):
+        return ""
+
+
+def save_topo_script_pref(script_path: str) -> None:
+    """Persist selected topology script path."""
+    path = os.path.normpath(script_path.strip()) if script_path.strip() else ""
+    try:
+        os.makedirs(LOG_DIR, exist_ok=True)
+        with open(TOPO_SCRIPT_PREF_JSON, "w", encoding="utf-8") as fh:
+            json.dump({"script_path": path}, fh, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
 
 
 def resolve_pcle_dirs() -> list[str]:

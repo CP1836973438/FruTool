@@ -6,8 +6,11 @@ from frutool.config import (
     get_ipmitool_dir,
     get_ipmitool_path,
     init_runtime_dirs,
+    list_pcie_eeprom_tools,
+    load_topo_script_pref,
     resolve_ipmitool_path,
     resolve_pcie_eeprom_tool,
+    save_topo_script_pref,
 )
 
 
@@ -163,3 +166,40 @@ class TestResolvePcieEepromTool:
         monkeypatch.setattr(config_mod.sys, "frozen", True, raising=False)
         monkeypatch.setattr(config_mod.sys, "_MEIPASS", str(bundled), raising=False)
         assert resolve_pcie_eeprom_tool() == str(script.resolve())
+
+
+class TestListPcieEepromTools:
+    def test_scans_variants_and_prefers_standard_name(self, monkeypatch, tmp_path):
+        base = tmp_path / "app"
+        ipmi = base / "ipmitool"
+        ipmi.mkdir(parents=True)
+        (ipmi / "PcieEEpromTool_v2.py").write_text("# v2")
+        (ipmi / "PcieEEpromTool.py").write_text("# std")
+        (base / "PcieEEpromTool_legacy.py").write_text("# legacy")
+
+        monkeypatch.setattr(config_mod, "BASE_DIR", str(base))
+        monkeypatch.setattr(config_mod.sys, "frozen", False, raising=False)
+        tools = list_pcie_eeprom_tools()
+        names = [t["name"] for t in tools]
+        assert names[0] == "PcieEEpromTool.py"
+        assert "PcieEEpromTool_v2.py" in names
+        assert "PcieEEpromTool_legacy.py" in names
+        assert all(" · " in t["label"] for t in tools)
+
+    def test_dedupes_by_abspath(self, monkeypatch, tmp_path):
+        base = tmp_path / "app"
+        ipmi = base / "ipmitool"
+        ipmi.mkdir(parents=True)
+        (ipmi / "PcieEEpromTool.py").write_text("# one")
+        monkeypatch.setattr(config_mod, "BASE_DIR", str(base))
+        monkeypatch.setattr(config_mod.sys, "frozen", False, raising=False)
+        tools = list_pcie_eeprom_tools()
+        assert len(tools) == 1
+
+    def test_pref_roundtrip(self, monkeypatch, tmp_path):
+        logs = tmp_path / "logs"
+        logs.mkdir()
+        monkeypatch.setattr(config_mod, "LOG_DIR", str(logs))
+        monkeypatch.setattr(config_mod, "TOPO_SCRIPT_PREF_JSON", str(logs / "topo_prefs.json"))
+        save_topo_script_pref(r"C:\tools\PcieEEpromTool_v2.py")
+        assert load_topo_script_pref().endswith("PcieEEpromTool_v2.py")

@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
-import sys
 from typing import Optional
 
 from frutool.config import BASE_DIR, LogCallback, get_ipmitool_dir, resolve_pcie_eeprom_tool
@@ -14,10 +14,57 @@ from frutool.domain.ipmi import (
 )
 from frutool.infrastructure.network import _startup_flags
 
-def run_pcie_topology_write(bin_path: str, user: str, pwd: str, bmc_ip: str, log_cb: LogCallback) -> bool:
-    topo_script = resolve_pcie_eeprom_tool()
+# Staged copy name under ipmitool/ — avoids overwriting the primary script.
+STAGED_TOPO_SCRIPT_NAME = "PcieEEpromTool_run.py"
+
+
+def stage_topo_script_for_run(script_path: str, log_cb: Optional[LogCallback] = None) -> Optional[str]:
+    """Ensure the topology script lives under ipmitool/ before execution.
+
+    Field constraint: absolute paths outside ipmitool/ fail; only scripts in that
+    directory run reliably. If the selected file is already there, use it as-is;
+    otherwise copy to ``PcieEEpromTool_run.py`` inside ipmitool/.
+    """
+    src = os.path.normpath(os.path.abspath(script_path.strip()))
+    if not os.path.isfile(src):
+        if log_cb:
+            log_cb("error", f"Topology script not found: {src}")
+        return None
+    work_dir = os.path.normpath(get_ipmitool_dir() or os.path.join(BASE_DIR, "ipmitool"))
+    try:
+        os.makedirs(work_dir, exist_ok=True)
+    except OSError as exc:
+        if log_cb:
+            log_cb("error", f"Cannot create ipmitool dir: {work_dir} ({exc})")
+        return None
+    if os.path.normpath(os.path.dirname(src)) == work_dir:
+        return src
+    dest = os.path.join(work_dir, STAGED_TOPO_SCRIPT_NAME)
+    try:
+        shutil.copy2(src, dest)
+    except OSError as exc:
+        if log_cb:
+            log_cb("error", f"Failed to load script into ipmitool/: {exc}")
+        return None
+    if log_cb:
+        log_cb("info", f"Loaded topology script into ipmitool/: {os.path.basename(src)} → {STAGED_TOPO_SCRIPT_NAME}")
+    return os.path.normpath(dest)
+
+
+def run_pcie_topology_write(
+    bin_path: str,
+    user: str,
+    pwd: str,
+    bmc_ip: str,
+    log_cb: LogCallback,
+    script_path: Optional[str] = None,
+) -> bool:
+    topo_script = (script_path or "").strip() or resolve_pcie_eeprom_tool()
     if not os.path.isfile(topo_script):
-        log_cb("error", f"PcieEEpromTool.py not found: {topo_script}")
+        log_cb("error", f"Topology script not found: {topo_script}")
+        return False
+    staged = stage_topo_script_for_run(topo_script, log_cb)
+    if not staged:
         return False
     if not os.path.isfile(bin_path):
         log_cb("error", f"Topology file not found: {bin_path}")
@@ -29,9 +76,10 @@ def run_pcie_topology_write(bin_path: str, user: str, pwd: str, bmc_ip: str, log
     python_argv = script_python_argv(log_cb)
     if not python_argv:
         return False
+    work_dir = os.path.dirname(staged)
     cmd = [
         *python_argv,
-        topo_script,
+        staged,
         "-H",
         bmc_ip,
         "-U",
@@ -43,7 +91,6 @@ def run_pcie_topology_write(bin_path: str, user: str, pwd: str, bmc_ip: str, log
         "-W",
         bin_path,
     ]
-    work_dir = get_ipmitool_dir() or BASE_DIR
     log_cb("cmd", " ".join(mask_ipmi_args(cmd)))
     try:
         result = subprocess.run(
@@ -76,4 +123,3 @@ def run_pcie_topology_write(bin_path: str, user: str, pwd: str, bmc_ip: str, log
     except Exception as exc:
         log_cb("error", f"PcieEEpromTool failed: {exc}")
         return False
-

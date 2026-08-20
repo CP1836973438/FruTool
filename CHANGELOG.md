@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.5.0 — 2026-08-20
+
+- 拓扑页可下拉选择多版本 `PcieEEpromTool*.py`（扫描 exe / ipmitool / 内置），记住上次选择；刷写前将非 ipmitool 目录的脚本加载到 `ipmitool/PcieEEpromTool_run.py` 再执行
+- 文档：新增现场《使用说明手册》（`docs/使用说明手册.md`）
+- 破坏性：无
+
+## 5.4.2 — 2026-08-20
+
+- 换板备份识别同时接受手导的 `{SN}.bin` 与工具导出的 `{SN}_时间戳.bin`
+- 破坏性：无
+
+## 5.4.1 — 2026-08-20
+
+- 换板演示不再自动填写 SN，只模拟 BMC 在线，便于手动输入验证跳过步骤 1
+- 破坏性：无
+
+## 5.4.0 — 2026-08-20
+
+- 新增：换板演示环境（`FRUTOOL_DEMO_SWAP=1`），模拟 BMC 在线并投放无时间戳 `{SN}_manual.bin`，用于验证跳过阶段 1
+- 破坏性：无
+
 ## [Unreleased]
 
 ### Added

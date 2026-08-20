@@ -156,6 +156,9 @@ def ipmi_base_args(user: str, pwd: str, bmc_ip: str) -> list[str]:
 
 
 def wait_for_bmc(user: str, pwd: str, bmc_ip: str, log_cb: LogCallback, max_wait: int = 180) -> bool:
+    if os.environ.get("FRUTOOL_DEMO_SWAP") == "1":
+        log_cb("success", f"演示模式：模拟 BMC {bmc_ip} FRU 就绪")
+        return True
     log_cb("info", f"Waiting for BMC {bmc_ip} (fru list / Board Serial), timeout {max_wait}s")
     deadline = time.time() + max_wait
     attempt = 0

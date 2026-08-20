@@ -102,7 +102,7 @@ class NetworkController(QObject):
             self._set_bmc_online(bool(result["bmc_online"]))
 
     def startup(self) -> None:
-        if os.environ.get("FRUTOOL_SMOKE") == "1" or os.environ.get("FRUTOOL_DEMO_TOPO") == "1":
+        if os.environ.get("FRUTOOL_SMOKE") == "1" or os.environ.get("FRUTOOL_DEMO_TOPO") == "1" or os.environ.get("FRUTOOL_DEMO_SWAP") == "1":
             return
         _cleanup_legacy_nic_ip_backup()
         self._startup_retry_active = True

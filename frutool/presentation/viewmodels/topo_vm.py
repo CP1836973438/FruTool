@@ -20,6 +20,8 @@ class TopoViewModel(QObject):
     selectedTopoCandidateIdChanged = pyqtSignal()
     selectedTopoCatalogIdChanged = pyqtSignal()
     catalogFilterChanged = pyqtSignal()
+    topoScriptModelChanged = pyqtSignal()
+    selectedTopoScriptIndexChanged = pyqtSignal()
     capabilitiesChanged = pyqtSignal()
 
     def __init__(self, ops: OpsController, parent: Optional[QObject] = None):
@@ -35,6 +37,8 @@ class TopoViewModel(QObject):
         relay(ops, "selectedTopoCandidateIdChanged", self, self.selectedTopoCandidateIdChanged)
         relay(ops, "selectedTopoCatalogIdChanged", self, self.selectedTopoCatalogIdChanged)
         relay(ops, "catalogFilterChanged", self, self.catalogFilterChanged)
+        relay(ops, "topoScriptModelChanged", self, self.topoScriptModelChanged)
+        relay(ops, "selectedTopoScriptIndexChanged", self, self.selectedTopoScriptIndexChanged)
         relay(ops, "capabilitiesChanged", self, self.capabilitiesChanged)
 
     @pyqtProperty(str, notify=topoPathChanged)
@@ -84,6 +88,22 @@ class TopoViewModel(QObject):
     @pyqtSlot(str)
     def setCatalogFilter(self, text: str) -> None:
         self._ops.setCatalogFilter(text)
+
+    @pyqtProperty("QVariantList", notify=topoScriptModelChanged)
+    def topoScriptModel(self) -> list:
+        return self._ops.topoScriptModel
+
+    @pyqtProperty(int, notify=selectedTopoScriptIndexChanged)
+    def selectedTopoScriptIndex(self) -> int:
+        return self._ops.selectedTopoScriptIndex
+
+    @pyqtSlot(int)
+    def setSelectedTopoScriptIndex(self, index: int) -> None:
+        self._ops.setSelectedTopoScriptIndex(index)
+
+    @pyqtSlot()
+    def refreshTopoScripts(self) -> None:
+        self._ops.refreshTopoScripts()
 
     @pyqtProperty(bool, notify=capabilitiesChanged)
     def canTopoWrite(self) -> bool:

@@ -13,11 +13,13 @@ class TestListFruBackupsForSn:
 
     def test_filters_by_sn_and_excludes_new_original(self, monkeypatch, tmp_path):
         monkeypatch.setattr(backup_mod, "BACKUP_DIR", str(tmp_path))
+        (tmp_path / "SN001.bin").write_bytes(b"\x00")
         (tmp_path / "SN001_20260101.bin").write_bytes(b"\x00")
         (tmp_path / "SN001_NEW_ORIGINAL_20260101.bin").write_bytes(b"\x00")
         (tmp_path / "SN002_20260101.bin").write_bytes(b"\x00")
-        (tmp_path / "SN001_20260101.txt").write_text("not bin")
-        assert list_fru_backups_for_sn("SN001") == ["SN001_20260101.bin"]
+        (tmp_path / "SN0012.bin").write_bytes(b"\x00")
+        (tmp_path / "SN001.txt").write_text("not bin")
+        assert list_fru_backups_for_sn("SN001") == ["SN001.bin", "SN001_20260101.bin"]
 
     def test_sorted_results(self, monkeypatch, tmp_path):
         monkeypatch.setattr(backup_mod, "BACKUP_DIR", str(tmp_path))
@@ -26,6 +28,15 @@ class TestListFruBackupsForSn:
         assert list_fru_backups_for_sn("SN001") == [
             "SN001_20260101.bin",
             "SN001_20260102.bin",
+        ]
+
+    def test_plain_sn_bin_matches_manual_export(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(backup_mod, "BACKUP_DIR", str(tmp_path))
+        (tmp_path / "12345678.bin").write_bytes(b"\x00")
+        (tmp_path / "12345678_manual.bin").write_bytes(b"\x00")
+        assert list_fru_backups_for_sn("12345678") == [
+            "12345678.bin",
+            "12345678_manual.bin",
         ]
 
     def test_missing_backup_dir(self, monkeypatch, tmp_path):

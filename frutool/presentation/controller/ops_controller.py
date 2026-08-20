@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING, Optional
 
 from PyQt6.QtCore import QObject, QTimer, pyqtProperty, pyqtSignal, pyqtSlot
 
-from frutool.config import LogCallback
+from frutool.config import (
+    LogCallback,
+    list_pcie_eeprom_tools,
+    load_topo_script_pref,
+    save_topo_script_pref,
+)
 from frutool.demo.topo_demo import demo_enabled
 from frutool.presentation.controller.base import ApplicationHost
 from frutool.presentation.dialogs.file_dialogs import browse_topo_file
@@ -40,6 +45,8 @@ class OpsController(QObject):
     selectedTopoCandidateIdChanged = pyqtSignal()
     selectedTopoCatalogIdChanged = pyqtSignal()
     catalogFilterChanged = pyqtSignal()
+    topoScriptModelChanged = pyqtSignal()
+    selectedTopoScriptIndexChanged = pyqtSignal()
     capabilitiesChanged = pyqtSignal()
 
     def __init__(
@@ -63,6 +70,8 @@ class OpsController(QObject):
         self._selected_topo_candidate_id = ""
         self._selected_topo_catalog_id = ""
         self._catalog_filter = ""
+        self._topo_script_model: list[dict] = []
+        self._selected_topo_script_index = -1
         self._fru_hint_in_flight = False
         self._topo_match_in_flight = False
         self._chrome: Optional[ChromeController] = None
@@ -74,6 +83,8 @@ class OpsController(QObject):
         self._fru_hint_timer.timeout.connect(self._run_fru_hint_read)
 
         self._conn.connFieldChanged.connect(self._on_conn_field_changed)
+
+        self._refresh_topo_scripts(persist=False)
 
         if self._conn.bmcOnline:
             self._schedule_fru_hint_read()
@@ -167,6 +178,64 @@ class OpsController(QObject):
         self._catalog_filter = text
         self.catalogFilterChanged.emit()
         self.topoCatalogChanged.emit()
+
+    @pyqtProperty("QVariantList", notify=topoScriptModelChanged)
+    def topoScriptModel(self) -> list:
+        return self._topo_script_model
+
+    @pyqtProperty(int, notify=selectedTopoScriptIndexChanged)
+    def selectedTopoScriptIndex(self) -> int:
+        return self._selected_topo_script_index
+
+    def _selected_topo_script_path(self) -> str:
+        if 0 <= self._selected_topo_script_index < len(self._topo_script_model):
+            return str(self._topo_script_model[self._selected_topo_script_index].get("path", ""))
+        return ""
+
+    def _refresh_topo_scripts(self, *, persist: bool) -> None:
+        tools = list_pcie_eeprom_tools()
+        pref = load_topo_script_pref()
+        self._topo_script_model = [
+            {"label": t["label"], "path": t["path"], "id": t["id"]} for t in tools
+        ]
+        index = -1
+        if pref:
+            for i, item in enumerate(self._topo_script_model):
+                if os.path.normpath(str(item["path"])) == pref:
+                    index = i
+                    break
+        if index < 0 and self._topo_script_model:
+            index = 0
+        self._selected_topo_script_index = index
+        self.topoScriptModelChanged.emit()
+        self.selectedTopoScriptIndexChanged.emit()
+        if persist and index >= 0:
+            save_topo_script_pref(self._selected_topo_script_path())
+
+    @pyqtSlot(int)
+    def setSelectedTopoScriptIndex(self, index: int) -> None:
+        if index == self._selected_topo_script_index:
+            return
+        if index < 0 or index >= len(self._topo_script_model):
+            return
+        self._selected_topo_script_index = index
+        self.selectedTopoScriptIndexChanged.emit()
+        save_topo_script_pref(self._selected_topo_script_path())
+
+    @pyqtSlot()
+    def refreshTopoScripts(self) -> None:
+        previous = self._selected_topo_script_path()
+        self._refresh_topo_scripts(persist=False)
+        if previous:
+            for i, item in enumerate(self._topo_script_model):
+                if os.path.normpath(str(item["path"])) == os.path.normpath(previous):
+                    if i != self._selected_topo_script_index:
+                        self._selected_topo_script_index = i
+                        self.selectedTopoScriptIndexChanged.emit()
+                    save_topo_script_pref(previous)
+                    return
+        if self._selected_topo_script_index >= 0:
+            save_topo_script_pref(self._selected_topo_script_path())
 
     def _set_topo_match(self, *, busy: bool, ok: bool, message: str) -> None:
         if self._topo_match_busy != busy:
@@ -435,8 +504,9 @@ class OpsController(QObject):
     @pyqtSlot()
     def doTopoWrite(self) -> None:
         path = self._topo_path.strip()
+        script_path = self._selected_topo_script_path()
         user, pwd = self._conn.credentials(True)
-        err = validate_topo_write(path, user, pwd)
+        err = validate_topo_write(path, user, pwd, script_path=script_path)
         if err:
             title, message, kind = err
             getattr(self._host, f"request_{kind}")(title, message)
@@ -447,7 +517,7 @@ class OpsController(QObject):
         self.topoProgressVisibleChanged.emit()
 
         def job(log: LogCallback):
-            return run_topo_write(path, user, pwd, bmc_ip, log)
+            return run_topo_write(path, user, pwd, bmc_ip, log, script_path=script_path)
 
         self._host.run_worker(job, self._on_topo_done, log_tab="topo")
 

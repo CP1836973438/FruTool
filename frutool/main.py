@@ -18,6 +18,8 @@ from PyQt6.QtWidgets import QApplication
 
 from frutool.bootstrap import create_qml_engine, load_app_window, qml_root
 from frutool.config import init_runtime_dirs, resolve_app_icon_path
+from frutool.demo import swap_demo_enabled
+from frutool.demo.swap_demo import schedule_swap_demo
 from frutool.demo.topo_demo import demo_enabled, schedule_topo_demo
 from frutool.presentation.app import build_application
 
@@ -73,6 +75,8 @@ def main():
 
     if demo_enabled():
         schedule_topo_demo(app_root)
+    elif swap_demo_enabled():
+        schedule_swap_demo(app_root)
 
     def _prepare_quit() -> None:
         for obj in engine.rootObjects():

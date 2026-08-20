@@ -66,6 +66,14 @@ def run_step2_clone(
 ) -> dict:
     log("info", "-" * 50)
     log("info", f"Step 2 started, SN={sn}")
+    if os.environ.get("FRUTOOL_DEMO_SWAP") == "1":
+        log("success", "演示模式：跳过真实 BMC 写入，模拟克隆成功")
+        return {
+            "ok": True,
+            "bmc_online": True,
+            "serial": "DEMO-BOARD-001",
+            "rollback": "",
+        }
     if not wait_for_bmc(user, pwd, bmc_ip, log):
         return {"ok": False, "bmc_online": False, "title": "超时", "message": "新板 BMC 长时间无响应。"}
     rc, out, err = run_ipmi(ipmi_base_args(user, pwd, bmc_ip) + ["fru", "list", "0"], log, 20)

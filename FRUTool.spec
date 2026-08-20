@@ -66,6 +66,9 @@ a = Analysis(
         'frutool.main',
         'frutool.config',
         'frutool.bootstrap',
+        'frutool.demo',
+        'frutool.demo.swap_demo',
+        'frutool.demo.topo_demo',
         'frutool.gpu_policy',
         # Presentation — app / controllers
         'frutool.presentation',

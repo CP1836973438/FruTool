@@ -55,6 +55,36 @@ ScrollView {
                 spacing: Theme.spacing_sm
 
                 Text {
+                    text: "拓扑脚本"
+                    color: Theme.text2
+                    font.pixelSize: Theme.fontSizeBody
+                    Layout.preferredWidth: 88
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                IdeComboBox {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 28
+                    Layout.alignment: Qt.AlignVCenter
+                    model: topoVm.topoScriptModel
+                    textRole: "label"
+                    currentIndex: topoVm.selectedTopoScriptIndex
+                    enabled: topoVm.topoScriptModel.length > 0
+                    onActivated: topoVm.setSelectedTopoScriptIndex(currentIndex)
+                }
+
+                IdeButton {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "刷新"
+                    onClicked: topoVm.refreshTopoScripts()
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacing_sm
+
+                Text {
                     text: "拓扑 .bin 文件"
                     color: Theme.text2
                     font.pixelSize: Theme.fontSizeBody
@@ -79,23 +109,10 @@ ScrollView {
 
             Text {
                 Layout.fillWidth: true
-                text: "使用连接设置中的新板账号密码与当前 BMC IP，在 ipmitool 目录下调用 PcieEEpromTool.py 写入 EEPROM（0x7E00）。各厂商拓扑 .bin 不同（≤512 字节）。打包版会调用本机已安装的 Python（与终端相同 PATH）。"
+                text: "使用连接设置中的新板账号密码与当前 BMC IP，调用上方所选拓扑脚本写入 EEPROM（0x7E00）。脚本须在 ipmitool/ 下执行；若选中其它位置的版本，会先加载到 ipmitool/ 再运行。各厂商拓扑 .bin 不同（≤512 字节）。"
                 color: Theme.text3
                 font.pixelSize: Theme.fontSizeBody
                 wrapMode: Text.Wrap
-            }
-
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 32
-
-                BusyIndicator {
-                    anchors.centerIn: parent
-                    width: 28
-                    height: 28
-                    visible: topoVm.topoProgressVisible || topoVm.topoMatchBusy
-                    running: visible
-                }
             }
 
             Text {
@@ -107,11 +124,31 @@ ScrollView {
                 wrapMode: Text.Wrap
             }
 
-            IdeButton {
-                text: "开始刷写拓扑文件"
-                primary: true
-                enabled: topoVm.canTopoWrite && topoVm.topoPath !== "" && connVm.bmcOnline
-                onClicked: topoVm.doTopoWrite()
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacing_sm
+
+                IdeButton {
+                    text: "开始刷写拓扑文件"
+                    primary: true
+                    enabled: topoVm.canTopoWrite && topoVm.topoPath !== "" && connVm.bmcOnline
+                    onClicked: topoVm.doTopoWrite()
+                }
+
+                Item {
+                    Layout.preferredWidth: 32
+                    Layout.preferredHeight: 32
+
+                    BusyIndicator {
+                        anchors.centerIn: parent
+                        width: 28
+                        height: 28
+                        visible: topoVm.topoProgressVisible || topoVm.topoMatchBusy
+                        running: visible
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
             }
         }
 
