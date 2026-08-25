@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FRU 自动化工具 — 图文使用教程（5.5.0）</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --border: #d0d7de;
+      --ok: #1a7f37;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    header {
+      background: linear-gradient(180deg, #ffffff, #eef1f4);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 20px 22px;
+    }
+    header h1 { margin: 0 0 8px; font-size: 1.55rem; }
+    header p { margin: 4px 0 0; color: var(--muted); }
+    nav.toc {
+      max-width: 980px;
+      margin: 16px auto 0;
+      padding: 0 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    nav.toc a {
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--accent);
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 20px 16px 64px;
+    }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 22px 24px;
+      margin-bottom: 16px;
+    }
+    h2 { margin: 0 0 12px; font-size: 1.25rem; }
+    h3 { margin: 18px 0 8px; font-size: 1.05rem; }
+    h4 { margin: 14px 0 6px; font-size: 0.98rem; }
+    ol, ul { padding-left: 1.25rem; }
+    pre.flow {
+      background: #0d1117;
+      color: #e6edf3;
+      border-radius: 8px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+    figure {
+      margin: 14px 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+    }
+    figure img { display: block; width: 100%; height: auto; }
+    figcaption {
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: #f6f8fa;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 10px 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f6f8fa; }
+    .note {
+      background: #fff8c5;
+      border: 1px solid #d4a72c66;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #5c4a00;
+      margin: 12px 0;
+    }
+    .pill {
+      display: inline-block;
+      background: #ddf4ff;
+      color: #0550ae;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .card-mini {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: #f6f8fa;
+    }
+    .card-mini strong { display: block; margin-bottom: 4px; color: var(--ok); }
+    a { color: var(--accent); }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding-bottom: 32px;
+    }
+    @media print {
+      body { background: #fff; }
+      nav.toc { display: none; }
+      section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FRU 自动化工具 — 图文使用教程</h1>
+    <p>适用版本 5.5.0 · 多功能工具：连接为唯一公共第一步，换板 / FRU / 拓扑可任选</p>
+    <p>截图为演示界面示意 · 现场请接真实 BMC</p>
+  </header>
+  <nav class="toc">
+    <a href="#overview">功能总览</a>
+    <a href="#step1">第一步·连接</a>
+    <a href="#swap">第二步·换板</a>
+    <a href="#fru">第二步·FRU</a>
+    <a href="#topo">第二步·拓扑</a>
+    <a href="#scenes">场景速查</a>
+    <a href="#faq">常见问题</a>
+  </nav>
+  <main>
+    <section id="overview">
+      <h2>这是什么工具</h2>
+      <p>FruTool 是面向现场的 <strong>多功能 BMC 运维工具</strong>。四个模块彼此独立，按任务选用，不是固定流水线。</p>
+      <table>
+        <thead>
+          <tr><th>模块</th><th>解决什么问题</th><th>何时用</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>连接与网络</strong></td><td>网卡、DHCP、旧/新板账号、BMC 是否在线</td><td>所有写操作前的公共前提</td></tr>
+          <tr><td><strong>换板流程</strong></td><td>旧板 FRU 备份 → 换板 → 克隆并还原 SN</td><td>主板更换、身份迁移</td></tr>
+          <tr><td><strong>FRU 字段刷写</strong></td><td>按字段读写 Chassis / Board / Product</td><td>改个别字段、核对信息</td></tr>
+          <tr><td><strong>PCIe 拓扑刷写</strong></td><td>拓扑 .bin 写入 EEPROM（0x7E00）</td><td>补拓扑、按机型刷拓扑</td></tr>
+        </tbody>
+      </table>
+      <pre class="flow">          ┌─→ 换板流程
+连接就绪 ─┼─→ FRU 字段刷写
+          └─→ PCIe 拓扑刷写</pre>
+      <p>只做拓扑、只改 FRU、只换板都可以；只要访问 BMC，就必须先完成 <strong>连接与网络</strong>。</p>
+      <h3>界面怎么认</h3>
+      <ul>
+        <li>左侧：换板 → FRU → 拓扑 → 连接</li>
+        <li>底部：展开终端（全部 / DHCP / FRU / 拓扑）、本机与 BMC 状态、版本与主题</li>
+        <li>启动：双击整个文件夹里的 <code>FRUTool.exe</code>，同意管理员 UAC</li>
+      </ul>
+    </section>
+
+    <section id="step1">
+      <h2><span class="pill">第一步（唯一公共）</span> 连接与网络</h2>
+      <p>所有需要 BMC 的功能都依赖本页。配好一次后，可反复切到其它模块。</p>
+      <figure>
+        <img src="images/manual/01-conn.png" alt="连接与网络" />
+        <figcaption>图 1 · 连接与网络：凭据 + 网卡 + 就绪状态</figcaption>
+      </figure>
+      <h3>本页有什么</h3>
+      <table>
+        <thead><tr><th>区域</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td>连接状态</td><td>本机、BMC 是否就绪</td></tr>
+          <tr><td>旧板凭据</td><td>旧主板账号/密码（换板读旧板常用）</td></tr>
+          <tr><td>新板凭据</td><td>新主板账号/密码（拓扑与多数写操作默认用这一组）</td></tr>
+          <tr><td>显示密码</td><td>核对密码是否填对</td></tr>
+          <tr><td>本机 IPv4 / 刷新网卡</td><td>选择连 BMC 的网卡</td></tr>
+        </tbody>
+      </table>
+      <h3>推荐操作</h3>
+      <ol>
+        <li>接好网线（直连 BMC 或同网段可达）</li>
+        <li>填写旧板、新板账号密码（新板一组必须正确）</li>
+        <li>选择网卡，必要时刷新</li>
+        <li>等待「本机与 BMC 均已就绪」</li>
+        <li><strong>第一步结束</strong> —— 按任务进入下面任一功能</li>
+      </ol>
+      <div class="note">网卡若仍是 Windows「自动获取 IP」，内置 DHCP 可能不起作用，请按机房规范配置。拓扑页使用新板账号密码 + 当前 BMC IP。</div>
+    </section>
+
+    <section>
+      <h2>第二步（按任务三选一）</h2>
+      <p>以下三个功能互不要求先后顺序。连接就绪后点左侧对应入口即可。</p>
+      <div class="grid-3">
+        <div class="card-mini"><strong>A · 换板</strong>主板更换、整机身份迁移</div>
+        <div class="card-mini"><strong>B · FRU</strong>字段级读写与核对</div>
+        <div class="card-mini"><strong>C · 拓扑</strong>刷 PCIe 拓扑 EEPROM</div>
+      </div>
+    </section>
+
+    <section id="swap">
+      <h2><span class="pill">第二步 A</span> 换板流程</h2>
+      <h3>功能介绍</h3>
+      <p>把旧主板 FRU 身份备份下来，换上新主板后再写回去，并处理 Board Serial 等字段。</p>
+      <ul>
+        <li><strong>手动</strong>：逐步点按钮，适合可控现场</li>
+        <li><strong>自动</strong>：上线后串联读 FRU → 核对 SN → 导出 → 等换板 → 克隆</li>
+        <li><strong>跳过步骤 1</strong>：已有该 SN 备份时可直接克隆</li>
+        <li><strong>回滚</strong>：克隆前另存新板原始 FRU，异常可恢复</li>
+      </ul>
+      <figure>
+        <img src="images/manual/03-swap.png" alt="换板流程" />
+        <figcaption>图 2 · 换板：手动 / 自动与步骤区</figcaption>
+      </figure>
+      <h3>备份文件（<code>fru_backup/</code>）</h3>
+      <table>
+        <thead><tr><th>类型</th><th>文件名</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td>工具导出</td><td><code>{SN}_时间戳.bin</code></td><td>步骤 1 标准备份</td></tr>
+          <tr><td>手导/投放</td><td><code>{SN}.bin</code></td><td>同样可识别</td></tr>
+          <tr><td>新板原始</td><td><code>{SN}_NEW_ORIGINAL_时间戳.bin</code></td><td>供回滚</td></tr>
+        </tbody>
+      </table>
+      <h4>A1 手动流程</h4>
+      <ol>
+        <li>BMC 在线 → 换板页选「手动」</li>
+        <li>填旧服务器 SN →「导出 FRU 备份」</li>
+        <li>确认 <code>fru_backup/</code> 已有文件</li>
+        <li>物理换板 → 确认新板 BMC 在线</li>
+        <li>「克隆 FRU 并还原 SN」</li>
+        <li>异常时用「回滚新板原始 FRU」；重来用「重置进度」</li>
+      </ol>
+      <h4>A2 自动流程</h4>
+      <ol>
+        <li>切换「自动」→ 上线后读 FRU → 弹窗核对 SN</li>
+        <li>确认并导出（Product Serial 为空无法自动继续）</li>
+        <li>等旧板离线 → 新板上线 → 自动克隆</li>
+        <li>写入过程勿强制关程序</li>
+      </ol>
+    </section>
+
+    <section id="fru">
+      <h2><span class="pill">第二步 B</span> FRU 字段刷写</h2>
+      <h3>功能介绍</h3>
+      <p>针对<strong>当前在线 BMC</strong> 做字段级读写（非整包换板）：Chassis / Board / Product 分组编辑；只刷写非空字段；可重置未提交编辑。</p>
+      <figure>
+        <img src="images/manual/02-fru.png" alt="FRU 字段刷写" />
+        <figcaption>图 3 · FRU：读取、编辑、刷写</figcaption>
+      </figure>
+      <h3>操作流程</h3>
+      <ol>
+        <li>连接已就绪</li>
+        <li>进入 FRU 页 →「尝试读取 FRU」</li>
+        <li>修改需要的字段（空字段不会被刷）</li>
+        <li>「刷写所有非空字段」→ 看 FRU 日志</li>
+        <li>放弃编辑用「重置」</li>
+      </ol>
+      <div class="note"><strong>与换板区别：</strong>换板是「旧板整包身份 → 新板」；本页是「当前这块板的字段微调」。</div>
+    </section>
+
+    <section id="topo">
+      <h2><span class="pill">第二步 C</span> PCIe 拓扑刷写</h2>
+      <h3>功能介绍</h3>
+      <p>将厂商拓扑二进制写入 EEPROM（偏移 0x7E00）。页面含三块：刷写区、匹配套餐拓扑、PCLE 拓扑库。支持多版本 <code>PcieEEpromTool*.py</code> 下拉选择并记住偏好。</p>
+      <figure>
+        <img src="images/manual/04-topo.png" alt="PCIe 拓扑刷写" />
+        <figcaption>图 4 · 拓扑：脚本、.bin、匹配卡片与刷写</figcaption>
+      </figure>
+      <h3>操作流程</h3>
+      <ol>
+        <li>连接已就绪，新板密码正确</li>
+        <li>选择拓扑脚本；新文件放入后点「刷新」</li>
+        <li>准备 .bin：浏览 / 点匹配卡片 / 在 PCLE 库筛选点选</li>
+        <li>「开始刷写拓扑文件」→ 看拓扑日志</li>
+      </ol>
+      <div class="note">
+        <strong>脚本约束：</strong>必须在 <code>ipmitool/</code> 下执行。其它位置选中的版本会先加载为
+        <code>ipmitool/PcieEEpromTool_run.py</code>。.bin 通常 ≤ 512 字节。打包版需本机 Python 可用。
+      </div>
+    </section>
+
+    <section id="scenes">
+      <h2>场景速查（连好之后）</h2>
+      <table>
+        <thead><tr><th>现场目标</th><th>去做</th></tr></thead>
+        <tbody>
+          <tr><td>只换主板、迁移 FRU 身份</td><td>换板流程</td></tr>
+          <tr><td>只改几个 FRU 字段</td><td>FRU 字段刷写</td></tr>
+          <tr><td>只刷 PCIe 拓扑</td><td>PCIe 拓扑刷写</td></tr>
+          <tr><td>换板后再刷拓扑</td><td>先换板，再拓扑（连接只需配一次）</td></tr>
+          <tr><td>已有 {SN}.bin，只写新板</td><td>填 SN → 跳过步骤 1 → 克隆</td></tr>
+        </tbody>
+      </table>
+      <h3>目录（相对 exe）</h3>
+      <table>
+        <thead><tr><th>路径</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>ipmitool/</code></td><td>ipmitool 与拓扑脚本</td></tr>
+          <tr><td><code>PCLE/</code></td><td>拓扑压缩包库</td></tr>
+          <tr><td><code>fru_backup/</code></td><td>FRU 备份与换板会话</td></tr>
+          <tr><td><code>logs/</code></td><td>日志与拓扑偏好</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="faq">
+      <h2>常见问题</h2>
+      <table>
+        <thead><tr><th>现象</th><th>处理</th></tr></thead>
+        <tbody>
+          <tr><td>BMC 离线</td><td>网线、网卡、账号、管理员权限</td></tr>
+          <tr><td>拓扑失败</td><td>脚本是否在 ipmitool/；.bin 大小；拓扑日志；Python</td></tr>
+          <tr><td>找不到脚本</td><td>放入 ipmitool/ 后刷新</td></tr>
+          <tr><td>换板无备份</td><td>核对 SN 与 fru_backup 文件名</td></tr>
+          <tr><td>刷写中误关</td><td>可能损坏 EEPROM，尽量等完成</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <footer>
+    FRU 自动化工具 v5.5.0 · Ctrl+P 可导出 PDF · 详细文字见「使用说明手册.md」
+  </footer>
+</body>
+</html>

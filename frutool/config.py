@@ -263,6 +263,7 @@ APP_PRODUCT_NAME = "FRU 自动化工具"
 APP_DESCRIPTION = "FRU 硬件信息自动化配置与备份工具"
 APP_COMPANY = "CP Studio"
 APP_COPYRIGHT = "Copyright (c) 2026 CP Studio. All rights reserved."
+APP_CONTACT_EMAIL = "CP1836973438@outlook.com"
 APP_VERSION = __version__
 APP_VERSION_LABEL = f"v{__version__}"
 

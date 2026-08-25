@@ -62,6 +62,10 @@ class ChromeViewModel(QObject):
     def appCopyright(self) -> str:
         return self._chrome.appCopyright
 
+    @pyqtProperty(str, constant=True)
+    def appContactEmail(self) -> str:
+        return self._chrome.appContactEmail
+
     @pyqtSlot()
     def showAbout(self) -> None:
         self._chrome.showAbout()

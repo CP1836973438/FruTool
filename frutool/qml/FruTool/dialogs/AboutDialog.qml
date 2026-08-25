@@ -20,6 +20,13 @@ BaseDialog {
         Text { text: chromeVm.appVersion; color: Theme.text }
         Text { text: "公司"; color: Theme.text3 }
         Text { text: chromeVm.appCompany; color: Theme.text }
+        Text { text: "联系"; color: Theme.text3 }
+        Text {
+            text: chromeVm.appContactEmail
+            color: Theme.accent
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
         Text { text: "版权"; color: Theme.text3 }
         Text {
             text: chromeVm.appCopyright

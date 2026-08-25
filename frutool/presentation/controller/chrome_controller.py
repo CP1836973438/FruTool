@@ -8,6 +8,7 @@ from PyQt6.QtCore import QObject, QTimer, pyqtProperty, pyqtSignal, pyqtSlot
 
 from frutool.config import (
     APP_COMPANY,
+    APP_CONTACT_EMAIL,
     APP_COPYRIGHT,
     APP_DESCRIPTION,
     APP_PRODUCT_NAME,
@@ -134,6 +135,10 @@ class ChromeController(QObject):
     @pyqtProperty(str, constant=True)
     def appCopyright(self) -> str:
         return APP_COPYRIGHT
+
+    @pyqtProperty(str, constant=True)
+    def appContactEmail(self) -> str:
+        return APP_CONTACT_EMAIL
 
     @pyqtSlot()
     def showAbout(self) -> None:

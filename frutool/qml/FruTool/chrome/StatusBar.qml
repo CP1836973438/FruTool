@@ -109,7 +109,7 @@ Item {
 
             ToolTip {
                 visible: versionMouseArea.containsMouse
-                text: "MAC: " + (connVm.macAddress || "—") + "\n点击查看关于"
+                text: "MAC: " + (connVm.macAddress || "—") + "\n点击查看关于 / 联系邮箱"
                 delay: 400
             }
         }

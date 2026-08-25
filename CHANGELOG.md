@@ -5,10 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 5.5.1 — 2026-08-25
+
+- 关于对话框与 exe 属性备注增加联系邮箱
+- 文档：图文教程按「连接为公共第一步、其它功能并列」细化；导出 PDF（`docs/使用教程手册.pdf`）
+- 破坏性：无
+
 ## 5.5.0 — 2026-08-20
 
 - 拓扑页可下拉选择多版本 `PcieEEpromTool*.py`（扫描 exe / ipmitool / 内置），记住上次选择；刷写前将非 ipmitool 目录的脚本加载到 `ipmitool/PcieEEpromTool_run.py` 再执行
-- 文档：新增现场《使用说明手册》（`docs/使用说明手册.md`）
+- 文档：新增现场《使用说明手册》（`docs/使用说明手册.md`）；另附图文教程与截图（`docs/使用教程手册.md` / `.html`）
 - 破坏性：无
 
 ## 5.4.2 — 2026-08-20
