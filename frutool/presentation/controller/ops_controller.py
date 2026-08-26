@@ -12,7 +12,7 @@ from frutool.config import (
     load_topo_script_pref,
     save_topo_script_pref,
 )
-from frutool.demo.topo_demo import demo_enabled
+from frutool.demo import hardware_sim_enabled, topo_demo_enabled
 from frutool.presentation.controller.base import ApplicationHost
 from frutool.presentation.dialogs.file_dialogs import browse_topo_file
 from frutool.presentation.services import (
@@ -110,7 +110,7 @@ class OpsController(QObject):
 
     @pyqtProperty(bool, constant=True)
     def demoMode(self) -> bool:
-        return demo_enabled()
+        return topo_demo_enabled()
 
     # --- State properties ---
 
@@ -354,7 +354,7 @@ class OpsController(QObject):
 
     @pyqtSlot()
     def on_bmc_online_changed(self) -> None:
-        if demo_enabled():
+        if topo_demo_enabled():
             return
         if not self._conn.bmcOnline:
             self._fru_hint_timer.stop()
@@ -370,7 +370,7 @@ class OpsController(QObject):
             self._schedule_fru_hint_read()
 
     def _schedule_fru_hint_read(self) -> None:
-        if demo_enabled():
+        if topo_demo_enabled():
             return
         if not self._conn.bmcOnline:
             return
@@ -478,6 +478,11 @@ class OpsController(QObject):
             self._host.set_busy(True)
 
             def job(log: LogCallback):
+                if hardware_sim_enabled():
+                    for area, idx, value in fields:
+                        log("info", f"[演示] 模拟写入 FRU field {area}/{idx} = {value}")
+                    log("success", "[演示] FRU 字段刷写完成（未连接真实硬件）")
+                    return {"ok": True, "success": len(fields), "total": len(fields), "cred_failed": False}
                 return run_fru_batch_write_resolved(
                     bmc_ip, new_user, new_pwd, old_user, old_pwd, fields, log
                 )
@@ -517,6 +522,11 @@ class OpsController(QObject):
         self.topoProgressVisibleChanged.emit()
 
         def job(log: LogCallback):
+            if hardware_sim_enabled():
+                log("cmd", f"[演示] PcieEEpromTool.py -W {path}")
+                log("info", f"[演示] 脚本={script_path or '(默认)'} · BMC={bmc_ip}")
+                log("success", "[演示] Topology file write completed（未连接真实硬件）")
+                return {"ok": True}
             return run_topo_write(path, user, pwd, bmc_ip, log, script_path=script_path)
 
         self._host.run_worker(job, self._on_topo_done, log_tab="topo")

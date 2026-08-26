@@ -80,13 +80,13 @@ ScrollView {
                     Layout.fillWidth: true
                     blurSource: root.blurSource
                     stepTitle: "步骤 2"
-                    stepSubtitle: "克隆到新板并还原 SN"
+                    stepSubtitle: "克隆到新板并还原新板 SN/PN"
                     locked: swapVm.step2Locked
                     done: swapVm.step2Done
                     active: !swapVm.step2Done && workflow.activeStepCard === 1
                     Text {
                         Layout.fillWidth: true
-                        text: "换上新主板后执行；Board Serial 会自动还原为新板真实值。"
+                        text: "换上新主板后执行。写入旧板 FRU 后始终还原新板 Board Serial；若新旧主板 Board Part Number 不一致，再把新板 PN 写回去。"
                         color: Theme.text3
                         font.pixelSize: Theme.fontSizeBody
                         wrapMode: Text.Wrap

@@ -5,6 +5,7 @@ import os
 from typing import TYPE_CHECKING
 
 from frutool.config import LogCallback
+from frutool.domain.fru_ops import clone_restore_summary
 from frutool.presentation.services import (
     list_step1_backups,
     plan_step1_bin_path,
@@ -131,11 +132,7 @@ class ManualSwapController:
             self._auto.clear_session()
             self._progress.emit_progress_step()
             self._progress.refresh_capabilities()
-            serial = self._progress.new_board_serial_backup or "—"
-            self._host.request_info(
-                "步骤 2 完成",
-                f"FRU 克隆与 SN 还原已完成。\nBoard Serial: {serial}",
-            )
+            self._host.request_info("步骤 2 完成", clone_restore_summary(result))
         else:
             self._progress.emit_progress_step()
             data = result if isinstance(result, dict) else {}

@@ -1,7 +1,6 @@
 """Auto swap worker jobs and poll transition logic (no Qt)."""
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -16,6 +15,27 @@ from frutool.domain.swap.session import (
 
 DialogError = tuple[str, str, str]
 
+# Demo poll timeline (ticks ≈ SWAP_POLL_INTERVAL_MS): 1 online → offline streak → new board
+_demo_wait_swap_ticks = 0
+_demo_wait_new_ticks = 0
+
+
+def _reset_demo_poll_ticks() -> None:
+    global _demo_wait_swap_ticks, _demo_wait_new_ticks
+    _demo_wait_swap_ticks = 0
+    _demo_wait_new_ticks = 0
+
+
+def _demo_old_fingerprint() -> FruFingerprint:
+    from frutool.demo import DEMO_SN
+    from frutool.demo.full_demo import DEMO_FRU_HINTS
+
+    return FruFingerprint(
+        board_serial=DEMO_FRU_HINTS.get("Board Serial", "DEMO-OLD-BOARD"),
+        product_serial=DEMO_FRU_HINTS.get("Product Serial", DEMO_SN),
+        product_name=DEMO_FRU_HINTS.get("Product Name", ""),
+    )
+
 
 def auto_phase_running(phase: str) -> bool:
     return phase not in ("idle", "done")
@@ -26,6 +46,10 @@ def validate_auto_export(sn: str, user: str, pwd: str, ipmitool_path: str = "") 
         return ("导出失败", "服务器 SN 为空，无法导出", "critical")
     if not user or not pwd:
         return ("导出失败", "旧板凭据未配置", "critical")
+    from frutool.demo import swap_demo_enabled
+
+    if swap_demo_enabled():
+        return None
     from frutool.config import ipmitool_install_hint, resolve_ipmitool_path
 
     if not resolve_ipmitool_path(refresh=True):
@@ -34,6 +58,12 @@ def validate_auto_export(sn: str, user: str, pwd: str, ipmitool_path: str = "") 
 
 
 def run_sn_detect_job(user: str, pwd: str, bmc_ip: str, _log: LogCallback) -> dict[str, Any]:
+    from frutool.demo import swap_demo_enabled
+
+    if swap_demo_enabled():
+        _reset_demo_poll_ticks()
+        _log("info", "[演示] 模拟读取旧板 FRU（自动模式）")
+        return {"ok": True, "fingerprint": _demo_old_fingerprint()}
     ok, out = probe_fru_list(user, pwd, bmc_ip)
     if not ok:
         return {"ok": False}
@@ -44,6 +74,10 @@ def run_sn_detect_job(user: str, pwd: str, bmc_ip: str, _log: LogCallback) -> di
 
 
 def run_capture_fingerprint_job(user: str, pwd: str, bmc_ip: str, _log: LogCallback) -> Optional[FruFingerprint]:
+    from frutool.demo import swap_demo_enabled
+
+    if swap_demo_enabled():
+        return _demo_old_fingerprint()
     ok, out = probe_fru_list(user, pwd, bmc_ip)
     if not ok:
         return None
@@ -60,6 +94,24 @@ def run_swap_poll_job(
     cached: Optional[FruFingerprint],
     _log: LogCallback,
 ) -> dict[str, Any]:
+    from frutool.demo import swap_demo_enabled
+
+    if swap_demo_enabled():
+        global _demo_wait_swap_ticks, _demo_wait_new_ticks
+        if phase == "wait_swap":
+            _demo_wait_new_ticks = 0
+            _demo_wait_swap_ticks += 1
+            # Tick 1: still "online"; later ticks: offline streak for SWAP_OFFLINE_STREAK
+            if _demo_wait_swap_ticks <= 1:
+                return {"phase": "wait_swap", "streak": 0}
+            return {"phase": "wait_swap", "streak": 1}
+        _demo_wait_swap_ticks = 0
+        _demo_wait_new_ticks += 1
+        if _demo_wait_new_ticks >= 2:
+            _log("info", "[演示] 模拟检测到新板 Board Serial")
+            return {"phase": "wait_new", "action": "clone"}
+        return {"phase": "wait_new", "action": "wait"}
+
     if phase == "wait_swap":
         ok, out = probe_fru_list(old_user, old_pwd, bmc_ip)
         if ok and cached:

@@ -106,6 +106,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Theme.spacing_xs
         Layout.rightMargin: Theme.spacing_xs
+        Layout.bottomMargin: Theme.spacing_sm
         spacing: Theme.spacing_sm
         Text {
             visible: !connVm.bmcOnline && fruVm.canFruWrite

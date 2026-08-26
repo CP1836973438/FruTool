@@ -22,13 +22,14 @@ DEFAULT_IPMITOOL_DIR = os.path.join(BASE_DIR, IPMITOOL_DIR_NAME)
 BACKUP_DIR = os.path.join(BASE_DIR, "fru_backup")
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 PCLE_DIR_NAME = "PCLE"
+PCLE_DIR = os.path.join(BASE_DIR, PCLE_DIR_NAME)
 TOPO_CACHE_DIR = os.path.join(BACKUP_DIR, "topo_cache")
 TOPO_INDEX_JSON = os.path.join(LOG_DIR, "topo_index.json")
 TOPO_SCRIPT_PREF_JSON = os.path.join(LOG_DIR, "topo_prefs.json")
 APP_ICON_NAME = "FRUTool.ico"
 PCIE_EEPROM_TOOL_GLOB = "PcieEEpromTool*.py"
 
-# PCLE archive naming: manufacturer in filename; platform codes (机型) are optional hints.
+# Keep in sync with Infill `KNOWN_VENDORS`.
 PCLE_MANUFACTURERS: tuple[str, ...] = (
     "FOXCONN",
     "H3C",
@@ -40,12 +41,14 @@ PCLE_MANUFACTURERS: tuple[str, ...] = (
     "Inventec",
     "HuaQin",
     "Kunlun",
+    "LITAO",
 )
 PCLE_PLATFORM_HINTS: tuple[str, ...] = (
     "YICHUN",
     "XIANGYANG",
     "FUZHOU",
 )
+_PCLE_SYNC_EXTS = {".bin", ".zip", ".7z", ".rar"}
 
 _cached_ipmitool_path: Optional[str] = None
 
@@ -182,16 +185,82 @@ def save_topo_script_pref(script_path: str) -> None:
         pass
 
 
+def pcle_load_dir() -> str:
+    """Runtime load folder: packaged `_internal/PCLE`, or repo `_internal/PCLE` in dev."""
+    bundled = bundled_dir()
+    if bundled:
+        return os.path.normpath(os.path.join(bundled, PCLE_DIR_NAME))
+    return os.path.normpath(os.path.join(BASE_DIR, "_internal", PCLE_DIR_NAME))
+
+
+def ensure_pcle_vendor_dirs(root: str) -> None:
+    os.makedirs(root, exist_ok=True)
+    for vendor in PCLE_MANUFACTURERS:
+        os.makedirs(os.path.join(root, vendor), exist_ok=True)
+
+
+def _pcle_rel_files(root: str) -> dict[str, str]:
+    """Map posix-relative path (case-preserved) -> absolute path for copyable files."""
+    found: dict[str, str] = {}
+    root_norm = os.path.normpath(root)
+    if not os.path.isdir(root_norm):
+        return found
+    for dirpath, dirnames, filenames in os.walk(root_norm):
+        dirnames[:] = [d for d in dirnames if "__macosx" not in d.casefold()]
+        for name in filenames:
+            if "__macosx" in name.casefold():
+                continue
+            if os.path.splitext(name)[1].lower() not in _PCLE_SYNC_EXTS:
+                continue
+            abs_path = os.path.join(dirpath, name)
+            rel = os.path.relpath(abs_path, root_norm).replace("\\", "/")
+            found[rel] = abs_path
+    return found
+
+
+def _copy_if_changed(src: str, dst: str) -> bool:
+    os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+    try:
+        if os.path.isfile(dst):
+            s_stat = os.stat(src)
+            d_stat = os.stat(dst)
+            if s_stat.st_size == d_stat.st_size and int(s_stat.st_mtime) == int(d_stat.st_mtime):
+                return False
+        shutil.copy2(src, dst)
+        return True
+    except OSError:
+        return False
+
+
+def sync_pcle_user_to_load() -> int:
+    """Copy user-drop PCLE files into the load dir. Returns files copied or updated."""
+    src_root = os.path.normpath(PCLE_DIR)
+    dst_root = os.path.normpath(pcle_load_dir())
+    if src_root == dst_root:
+        return 0
+    ensure_pcle_vendor_dirs(dst_root)
+    copied = 0
+    src_files = _pcle_rel_files(src_root)
+    for rel, src in src_files.items():
+        dst = os.path.normpath(os.path.join(dst_root, *rel.split("/")))
+        if _copy_if_changed(src, dst):
+            copied += 1
+    dst_files = _pcle_rel_files(dst_root)
+    for rel in dst_files:
+        if rel not in src_files:
+            try:
+                os.remove(dst_files[rel])
+            except OSError:
+                pass
+    return copied
+
+
 def resolve_pcle_dirs() -> list[str]:
-    """PCLE archive directories (exe-side override first, then bundled _internal)."""
-    dirs: list[str] = []
-    seen: set[str] = set()
-    for path in resource_candidates(PCLE_DIR_NAME):
-        norm = os.path.normpath(path)
-        if os.path.isdir(norm) and norm not in seen:
-            seen.add(norm)
-            dirs.append(norm)
-    return dirs
+    """Catalog scans the load folder only (`_internal/PCLE`)."""
+    load = pcle_load_dir()
+    if os.path.isdir(load):
+        return [load]
+    return []
 
 
 # Default hint path; call resolve_pcie_eeprom_tool() for actual lookup.
@@ -282,6 +351,9 @@ def init_runtime_dirs() -> None:
     os.makedirs(BACKUP_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(TOPO_CACHE_DIR, exist_ok=True)
+    ensure_pcle_vendor_dirs(PCLE_DIR)
+    ensure_pcle_vendor_dirs(pcle_load_dir())
+    sync_pcle_user_to_load()
 
 
 FRU_FIELDS = [

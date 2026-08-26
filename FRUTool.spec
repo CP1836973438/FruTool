@@ -38,13 +38,9 @@ else:
         file=sys.stderr,
     )
 
-if os.path.isdir("PCLE"):
-    _datas.append(("PCLE", "PCLE"))
-else:
-    print(
-        "WARNING: PCLE/ directory not found — topology auto-match will need external PCLE beside exe.",
-        file=sys.stderr,
-    )
+# Topology .bin library is not bundled. At runtime the app creates
+#   <exe>/PCLE/<vendor>/   (user drop)
+#   _internal/PCLE/        (load/index folder)
 
 if os.path.isfile(_icon):
     _datas.insert(0, (_icon, "."))
@@ -69,6 +65,7 @@ a = Analysis(
         'frutool.demo',
         'frutool.demo.swap_demo',
         'frutool.demo.topo_demo',
+        'frutool.demo.full_demo',
         'frutool.gpu_policy',
         # Presentation — app / controllers
         'frutool.presentation',

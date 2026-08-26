@@ -18,6 +18,7 @@ from frutool.config import (
     SWAP_WAIT_NEW_HEARTBEAT_S,
     get_ipmitool_path,
 )
+from frutool.domain.fru_ops import clone_restore_summary
 from frutool.domain.ipmi import FruFingerprint
 from frutool.domain.swap.auto import (
     apply_poll_result,
@@ -278,7 +279,7 @@ class AutoSwapWorkflow:
             self._progress.set_step2_done(True)
             self._progress.set_new_board_serial_backup(result.get("serial"))
             self._progress.set_new_board_fru_backup_path(result.get("rollback") or None)
-            self._log("success", f"自动换板完成，Board Serial: {self._progress.new_board_serial_backup}")
+            self._log("success", clone_restore_summary(result).replace("\n", " "))
             self._session.clear_session()
             self._session.set_phase("done")
             QTimer.singleShot(

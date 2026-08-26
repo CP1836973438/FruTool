@@ -20,13 +20,14 @@ from frutool.config import (
     TOPO_CACHE_DIR,
     TOPO_INDEX_JSON,
     resolve_pcle_dirs,
+    sync_pcle_user_to_load,
 )
 
 ARCHIVE_EXTS = {".zip", ".7z", ".rar"}
 BARE_BIN_EXT = ".bin"
 _MACOSX_MARK = "__macosx"
 _SUITE_PREFIX = "suite:"
-_INDEX_VERSION = 5
+_INDEX_VERSION = 6
 _UNKNOWN_MANUFACTURER = "未知厂商"
 
 LogFn = Callable[[str, str], None]
@@ -78,13 +79,57 @@ def canonical_manufacturer(name: str) -> str:
     return raw
 
 
+def _segments_under_pcle(path: str) -> tuple[str, ...]:
+    """Path segments after the ``PCLE`` ancestor. Empty if PCLE is not in the path."""
+    current = os.path.normpath(path)
+    collected: list[str] = []
+    while True:
+        base = os.path.basename(current.rstrip("\\/"))
+        if not base:
+            return ()
+        collected.append(base)
+        if base.casefold() == PCLE_DIR_NAME.casefold():
+            collected.reverse()
+            return tuple(collected[1:])
+        parent = os.path.dirname(current)
+        if parent == current:
+            return ()
+        current = parent
+
+
+def _match_token(text: str, candidates: tuple[str, ...]) -> str:
+    blob = _normalize_archive_tokens(text)
+    best = ""
+    best_len = 0
+    for candidate in candidates:
+        token = _normalize_archive_tokens(candidate)
+        if token and token in blob and len(token) > best_len:
+            best = candidate
+            best_len = len(token)
+    return best
+
+
 def infer_manufacturer_from_archive(archive_path: str) -> str:
-    """Parse manufacturer from PCLE archive / bare-bin path (filename + parent folders)."""
+    """Manufacturer from the PCLE vendor folder; filename tokens are fallback only."""
+    segments = _segments_under_pcle(archive_path)
+    if len(segments) >= 2:
+        folder = segments[0].strip()
+        if folder:
+            return canonical_manufacturer(folder)
     return _infer_token_from_path(archive_path, PCLE_MANUFACTURERS) or _UNKNOWN_MANUFACTURER
 
 
 def infer_platform_from_archive(archive_path: str) -> str:
-    """Parse platform / 机型 code from archive / bare-bin path (case-insensitive)."""
+    """Platform from nested folder under the vendor dir, else filename / path tokens."""
+    segments = _segments_under_pcle(archive_path)
+    if len(segments) >= 3:
+        nested = segments[1:-1]
+        for folder in nested:
+            matched = _match_token(folder, PCLE_PLATFORM_HINTS)
+            if matched:
+                return matched
+        if nested:
+            return nested[0]
     return _infer_token_from_path(archive_path, PCLE_PLATFORM_HINTS)
 
 
@@ -110,14 +155,7 @@ def _path_inference_blob(path: str) -> str:
 
 def _infer_token_from_path(path: str, candidates: tuple[str, ...]) -> str:
     blob = _normalize_archive_tokens(_path_inference_blob(path))
-    best = ""
-    best_len = 0
-    for candidate in candidates:
-        token = _normalize_archive_tokens(candidate)
-        if token and token in blob and len(token) > best_len:
-            best = candidate
-            best_len = len(token)
-    return best
+    return _match_token(blob, candidates)
 
 
 def infer_vendor_label(archive_path: str) -> str:
@@ -575,6 +613,7 @@ def _save_cached_index(signature: list[dict[str, object]], index: dict[str, list
 
 def build_topo_index(*, log: Optional[LogFn] = None) -> dict[str, list[TopoEntry]]:
     """Scan PCLE archives and bare .bin files; map suite code -> variants."""
+    sync_pcle_user_to_load()
     dirs = resolve_pcle_dirs()
     signature = _pcle_signature(dirs)
     cached = _load_cached_index(signature)
@@ -676,6 +715,14 @@ def list_topo_catalog(*, log: Optional[LogFn] = None) -> list[dict[str, object]]
                     "innerPath": entry.inner_path.replace("\\", "/"),
                 }
             )
+    catalog.sort(
+        key=lambda item: (
+            str(item.get("manufacturer") or "").casefold(),
+            str(item.get("platform") or "").casefold(),
+            str(item.get("suite") or "").casefold(),
+            str(item.get("archive") or "").casefold(),
+        )
+    )
     return catalog
 
 
@@ -722,7 +769,7 @@ def match_topo_candidates(
             "manufacturer": mfr,
             "candidates": [],
             "catalog": catalog,
-            "message": "未找到 PCLE 拓扑资源目录（请将压缩包或 .bin 放入 PCLE/）。",
+            "message": "未找到 PCLE 拓扑加载目录（请将压缩包或 .bin 放入 exe 旁 PCLE/<厂商>/）。",
         }
 
     index = build_topo_index(log=log)

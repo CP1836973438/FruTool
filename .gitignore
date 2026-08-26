@@ -11,6 +11,7 @@ dist/
 logs/
 *.log
 fru_backup/
+_internal/
 .pytest_cache/
 .coverage
 

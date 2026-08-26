@@ -99,7 +99,7 @@ FruTool/
 │   └── demo/topo_demo.py       # 拓扑 UI 演示模式
 ├── ipmitool/                   # 运行时：ipmitool.exe + 依赖
 ├── PcieEEpromTool.py           # 拓扑 EEPROM 脚本（打包进 ipmitool/）
-├── PCLE/                       # 拓扑库（zip/7z/rar 压缩包 + 散落 .bin）
+├── PCLE/                       # 用户投放拓扑库（按厂商子目录）；加载副本在 _internal/PCLE/
 ├── FRUTool.spec                # PyInstaller onedir 配置
 ├── tests/                      # pytest（见 §9）
 ├── scripts/                    # compile_shaders.ps1、verify_dist.ps1
@@ -174,7 +174,7 @@ FruTool/
 |------|----------|------|
 | `ipmi.py` | `run_ipmi`, `probe_bmc_ping`, `parse_board_serial` | ipmitool 子进程；frozen 下 Python 解析 |
 | `dhcp.py` | `DHCPServer` | UDP/67 线程，为 BMC 分配固定 IP |
-| `fru_ops.py` | `run_step1_export`, `run_step2_clone` | FRU bin 导出/克隆 |
+| `fru_ops.py` | `run_step1_export`, `run_step2_clone` | FRU 导出/克隆；还原新板 Board Serial，PN 不同时还原 Board Part Number |
 | `backup.py` | 备份文件列表 | `fru_backup/` |
 | `topo_catalog.py` | `build_topo_index`, `match_topo_candidates` | PCLE 索引（压缩包+裸 bin）、SHA256 签名、缓存校验 |
 | `pcie_topo.py` | `run_pcie_topology_write` | 调用 `ipmitool/PcieEEpromTool.py` |
@@ -241,7 +241,7 @@ FruTool/
 |------|----------|----------|
 | `ipmitool.exe` | `resolve_ipmitool_path()` | `FRUTOOL_IPMITOOL` → exe 旁 `ipmitool/` → `_internal/ipmitool` → PATH |
 | `PcieEEpromTool.py` | `resolve_pcie_eeprom_tool()` | exe 旁 / 内置 `ipmitool/PcieEEpromTool.py` |
-| `PCLE/` | `resolve_pcle_dirs()` | exe 旁 → `_internal/PCLE` |
+| `PCLE/` | `pcle_load_dir()` | 用户投放到 exe 旁 `PCLE/<厂商>/`，同步后索引 `_internal/PCLE` |
 | Python 解释器（frozen） | `script_python_argv()` | `py -3` → python3 → python（实测 `--version`） |
 
 ---
@@ -345,7 +345,7 @@ BMC online → 读 FRU hint (Product Extra / Manufacturer)
 
 **防幻觉机制（v5.1.6+）：** 索引含 SHA256；匹配时二次扫描压缩包；失败清缓存与路径框。
 
-**裸 bin（v5.3.0+）：** 递归扫描 `PCLE/` 下 `.bin`；文件名（不含扩展名）= 套餐号；厂商/机型可从父目录或文件名推断（如 `PCLE/Inspur/YICHUN/套餐.bin`）。
+**裸 bin：** 用户放到 exe 旁 `PCLE/<厂商>/`；启动同步到 `_internal/PCLE/` 后递归扫描 `.bin` / zip / 7z / rar。文件名（不含扩展名）= 套餐号。厂商名单与 Infill `KNOWN_VENDORS` 一致（含 LITAO）。不打包出厂压缩包。
 
 ---
 
@@ -380,9 +380,9 @@ pyinstaller --noconfirm --clean FRUTool.spec
 
 **产物：** `dist/FRUTool/FRUTool.exe` + `_internal/`
 
-**内置资源：** QML、ipmitool/、PcieEEpromTool.py（仅 ipmitool/ 下）、PCLE/、图标
+**内置资源：** QML、ipmitool/、PcieEEpromTool.py（仅 ipmitool/ 下）、图标
 
-**现场覆盖：** 将新版 `ipmitool/` 或 `PCLE/` 放在 exe 同目录，无需重打包。
+**现场覆盖：** 将新版 `ipmitool/` 放在 exe 同目录；拓扑 `.bin` 放入 `PCLE/<厂商>/`（同步到 `_internal/PCLE/` 加载）。
 
 ---
 

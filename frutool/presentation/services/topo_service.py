@@ -6,6 +6,7 @@ import os
 from typing import Optional
 
 from frutool.config import LogCallback, resolve_pcie_eeprom_tool
+from frutool.demo import hardware_sim_enabled
 from frutool.domain.topo_catalog import (
     canonical_manufacturer,
     extract_catalog_entry,
@@ -38,7 +39,7 @@ def validate_topo_write(
     topo_script = (script_path or "").strip() or resolve_pcie_eeprom_tool()
     if not os.path.isfile(topo_script):
         return ("脚本不存在", f"找不到拓扑脚本:\n{topo_script}", "critical")
-    if not resolve_script_python():
+    if not hardware_sim_enabled() and not resolve_script_python():
         return (
             "未找到 Python",
             "请确认终端中 python --version 或 py -3 --version 可用；"

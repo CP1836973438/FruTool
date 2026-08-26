@@ -43,6 +43,7 @@ def _patch_pcle(monkeypatch, tmp_path):
     cache.mkdir()
     logs.mkdir()
     monkeypatch.setattr(topo_catalog, "resolve_pcle_dirs", lambda: [str(pcle)])
+    monkeypatch.setattr(topo_catalog, "sync_pcle_user_to_load", lambda: 0)
     monkeypatch.setattr(topo_catalog, "TOPO_CACHE_DIR", str(cache))
     monkeypatch.setattr(topo_catalog, "TOPO_INDEX_JSON", str(logs / "topo_index.json"))
     monkeypatch.setattr(topo_catalog, "LOG_DIR", str(logs))
@@ -54,6 +55,7 @@ class TestArchiveNaming:
         assert infer_manufacturer_from_archive("inspur-YICHUN-topo.zip") == "Inspur"
         assert infer_manufacturer_from_archive("FOXCONN-xiangyang.zip") == "FOXCONN"
         assert infer_manufacturer_from_archive("huaqin_fuzhou.7z") == "HuaQin"
+        assert infer_manufacturer_from_archive("LITAO-topo.zip") == "LITAO"
 
     def test_canonical_manufacturer(self):
         from frutool.domain.topo_catalog import canonical_manufacturer
@@ -61,6 +63,7 @@ class TestArchiveNaming:
         assert canonical_manufacturer("inspur") == "Inspur"
         assert canonical_manufacturer("FOXCONN") == "FOXCONN"
         assert canonical_manufacturer("huaqin") == "HuaQin"
+        assert canonical_manufacturer("litao") == "LITAO"
 
     def test_infer_manufacturer_unknown_without_vendor(self):
         assert infer_manufacturer_from_archive("YICHUN PCIE TOPO.rar") == "未知厂商"
@@ -69,6 +72,40 @@ class TestArchiveNaming:
         assert infer_platform_from_archive("Inspur-YICHUN-topo.zip") == "YICHUN"
         assert infer_platform_from_archive("FOXCONN-xiangyang-topo.zip") == "XIANGYANG"
         assert infer_platform_from_archive("Inspur-topo.zip") == ""
+
+    def test_vendor_folder_wins_over_filename_token(self, tmp_path):
+        path = tmp_path / "PCLE" / "Inspur" / "FOXCONN-xiangyang.bin"
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"\x00")
+        assert infer_manufacturer_from_archive(str(path)) == "Inspur"
+        assert infer_platform_from_archive(str(path)) == "XIANGYANG"
+
+    def test_vendor_folder_from_internal_pcle(self, tmp_path):
+        path = tmp_path / "_internal" / "PCLE" / "LITAO" / "S62D1-I8DD2M-L.bin"
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"\x00")
+        assert infer_manufacturer_from_archive(str(path)) == "LITAO"
+        assert infer_platform_from_archive(str(path)) == ""
+
+    def test_nested_folder_fills_platform(self, tmp_path):
+        path = tmp_path / "PCLE" / "HuaQin" / "FUZHOU" / "M51M1-I9DD2M.bin"
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"\x00")
+        assert infer_manufacturer_from_archive(str(path)) == "HuaQin"
+        assert infer_platform_from_archive(str(path)) == "FUZHOU"
+
+    def test_unknown_vendor_folder_still_used(self, tmp_path):
+        path = tmp_path / "PCLE" / "Acme" / "S1.bin"
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"\x00")
+        assert infer_manufacturer_from_archive(str(path)) == "Acme"
+
+    def test_file_at_pcle_root_still_reads_filename(self, tmp_path):
+        path = tmp_path / "PCLE" / "inspur-YICHUN-topo.zip"
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"\x00")
+        assert infer_manufacturer_from_archive(str(path)) == "Inspur"
+        assert infer_platform_from_archive(str(path)) == "YICHUN"
 
 
 class TestTopoCatalog:

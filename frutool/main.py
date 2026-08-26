@@ -18,7 +18,8 @@ from PyQt6.QtWidgets import QApplication
 
 from frutool.bootstrap import create_qml_engine, load_app_window, qml_root
 from frutool.config import init_runtime_dirs, resolve_app_icon_path
-from frutool.demo import swap_demo_enabled
+from frutool.demo import fake_bmc_enabled, swap_demo_enabled
+from frutool.demo.full_demo import schedule_full_demo
 from frutool.demo.swap_demo import schedule_swap_demo
 from frutool.demo.topo_demo import demo_enabled, schedule_topo_demo
 from frutool.presentation.app import build_application
@@ -73,7 +74,9 @@ def main():
     if icon_path and hasattr(root, "setIcon"):
         root.setIcon(app.windowIcon())
 
-    if demo_enabled():
+    if os.environ.get("FRUTOOL_DEMO_ALL") == "1":
+        schedule_full_demo(app_root)
+    elif demo_enabled():
         schedule_topo_demo(app_root)
     elif swap_demo_enabled():
         schedule_swap_demo(app_root)

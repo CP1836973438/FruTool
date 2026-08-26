@@ -40,10 +40,15 @@ if (Test-Path $LegacyTopo) {
 }
 
 $BundledPcle = Join-Path $Internal "PCLE"
+$PackedArchives = @()
 if (Test-Path $BundledPcle) {
-    Write-Host "OK: bundled PCLE/"
+    $PackedArchives = @(Get-ChildItem -Path $BundledPcle -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Extension -match '\.(zip|7z|rar)$' })
+}
+if ($PackedArchives.Count -gt 0) {
+    Write-Error ("factory PCLE archives must not be packed: " + (($PackedArchives | ForEach-Object { $_.Name }) -join ", "))
 } else {
-    Write-Warning "bundled PCLE/ not found (build without PCLE/ source?)"
+    Write-Host "OK: no packed PCLE factory archives (runtime load folder is _internal/PCLE)"
 }
 
 Write-Host "Distribution folder: $DistDir"

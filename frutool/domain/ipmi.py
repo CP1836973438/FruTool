@@ -156,7 +156,7 @@ def ipmi_base_args(user: str, pwd: str, bmc_ip: str) -> list[str]:
 
 
 def wait_for_bmc(user: str, pwd: str, bmc_ip: str, log_cb: LogCallback, max_wait: int = 180) -> bool:
-    if os.environ.get("FRUTOOL_DEMO_SWAP") == "1":
+    if os.environ.get("FRUTOOL_DEMO_SWAP") == "1" or os.environ.get("FRUTOOL_DEMO_ALL") == "1":
         log_cb("success", f"演示模式：模拟 BMC {bmc_ip} FRU 就绪")
         return True
     log_cb("info", f"Waiting for BMC {bmc_ip} (fru list / Board Serial), timeout {max_wait}s")
@@ -210,6 +210,10 @@ def parse_fru_field(fru_output: str, field_name: str) -> Optional[str]:
             value = match.group(1).strip()
             return value or None
     return None
+
+
+def parse_board_part_number(fru_output: str) -> Optional[str]:
+    return parse_fru_field(fru_output, "Board Part Number")
 
 
 def parse_product_serial(fru_output: str) -> Optional[str]:

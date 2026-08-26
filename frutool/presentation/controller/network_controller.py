@@ -17,6 +17,7 @@ from frutool.config import (
     NETWORK_STARTUP_MAX_ATTEMPTS,
     NETWORK_STARTUP_RETRY_MS,
 )
+from frutool.demo import fake_bmc_enabled
 from frutool.domain.dhcp import DHCPServer
 from frutool.infrastructure.network import (
     NetworkChoice,
@@ -102,7 +103,7 @@ class NetworkController(QObject):
             self._set_bmc_online(bool(result["bmc_online"]))
 
     def startup(self) -> None:
-        if os.environ.get("FRUTOOL_SMOKE") == "1" or os.environ.get("FRUTOOL_DEMO_TOPO") == "1" or os.environ.get("FRUTOOL_DEMO_SWAP") == "1":
+        if os.environ.get("FRUTOOL_SMOKE") == "1" or fake_bmc_enabled():
             return
         _cleanup_legacy_nic_ip_backup()
         self._startup_retry_active = True

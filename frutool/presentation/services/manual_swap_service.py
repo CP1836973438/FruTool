@@ -18,6 +18,10 @@ def validate_step1_export(sn: str, user: str, pwd: str) -> Optional[DialogError]
         return ("信息不完整", "请输入旧服务器 SN。", "warning")
     if not user or not pwd:
         return ("信息不完整", "请输入旧板 BMC 账号和密码。", "warning")
+    from frutool.demo import swap_demo_enabled
+
+    if swap_demo_enabled():
+        return None
     if not resolve_ipmitool_path():
         return ("未找到 ipmitool", ipmitool_install_hint(), "critical")
     return None

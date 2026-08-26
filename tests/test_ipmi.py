@@ -12,6 +12,7 @@ from frutool.domain.ipmi import (
     capture_fru_fingerprint,
     ipmi_base_args,
     mask_ipmi_args,
+    parse_board_part_number,
     parse_board_serial,
     parse_fru_field,
     parse_product_serial,
@@ -41,6 +42,9 @@ class TestIpmiBaseArgs:
 
 
 class TestFruParsing:
+    def test_parse_board_part_number(self):
+        assert parse_board_part_number(SAMPLE_FRU_OUTPUT) == "YZMB-03296-10F"
+
     def test_parse_board_serial(self):
         assert parse_board_serial(SAMPLE_FRU_OUTPUT) == "BQWF123456"
 
@@ -142,6 +146,8 @@ class TestWaitForBmc:
         assert any(e[0] == "success" for e in entries)
 
     def test_times_out(self, log_collector, monkeypatch):
+        monkeypatch.delenv("FRUTOOL_DEMO_SWAP", raising=False)
+        monkeypatch.delenv("FRUTOOL_DEMO_ALL", raising=False)
         entries, log = log_collector
         clock = {"t": 0.0}
 

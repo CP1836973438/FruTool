@@ -7,7 +7,7 @@ AUTO_PHASE_STATUS: dict[str, str] = {
     "sn_confirm": "请核对服务器 SN 并确认导出",
     "exporting": "正在导出 FRU 备份…",
     "wait_swap": "FRU 已导出，等待旧板离线（请换板）…",
-    "cloning": "检测到新板，正在克隆 FRU 并还原 SN…",
+    "cloning": "检测到新板，正在克隆 FRU 并还原新板 SN/PN…",
     "done": "自动换板已完成",
 }
 
@@ -17,7 +17,7 @@ AUTO_PHASE_STATUS_EN: dict[str, str] = {
     "sn_confirm": "Confirm server SN and export",
     "exporting": "Exporting FRU backup…",
     "wait_swap": "FRU exported, waiting for old board offline (swap now)…",
-    "cloning": "New board detected, cloning FRU and restoring SN…",
+    "cloning": "New board detected, cloning FRU and restoring new-board SN/PN…",
     "done": "Auto swap completed",
 }
 

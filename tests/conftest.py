@@ -16,6 +16,7 @@ FRU Device Description : Builtin FRU Device
  Board Mfg            : Intel
  Board Product        : S2600WT
  Board Serial         : BQWF123456
+ Board Part Number    : YZMB-03296-10F
  Product Manufacturer : Intel
  Product Name         : S2600WTTR
  Product Serial       : SN123456789

@@ -1,8 +1,11 @@
 """Tests for application config."""
 from __future__ import annotations
 
+import os
+
 import frutool.config as config_mod
 from frutool.config import (
+    PCLE_MANUFACTURERS,
     get_ipmitool_dir,
     get_ipmitool_path,
     init_runtime_dirs,
@@ -11,6 +14,7 @@ from frutool.config import (
     resolve_ipmitool_path,
     resolve_pcie_eeprom_tool,
     save_topo_script_pref,
+    sync_pcle_user_to_load,
 )
 
 
@@ -18,24 +22,71 @@ class TestInitRuntimeDirs:
     def test_creates_backup_and_log_dirs(self, monkeypatch, tmp_path):
         backup = tmp_path / "fru_backup"
         logs = tmp_path / "logs"
+        pcle = tmp_path / "PCLE"
+        load = tmp_path / "_internal" / "PCLE"
         monkeypatch.setattr(config_mod, "BACKUP_DIR", str(backup))
         monkeypatch.setattr(config_mod, "LOG_DIR", str(logs))
+        monkeypatch.setattr(config_mod, "TOPO_CACHE_DIR", str(backup / "topo_cache"))
+        monkeypatch.setattr(config_mod, "PCLE_DIR", str(pcle))
+        monkeypatch.setattr(config_mod, "pcle_load_dir", lambda: str(load))
         assert not backup.exists()
         assert not logs.exists()
+        assert not pcle.exists()
         init_runtime_dirs()
         assert backup.is_dir()
         assert logs.is_dir()
+        assert pcle.is_dir()
+        assert (pcle / "Inspur").is_dir()
+        assert (pcle / "LITAO").is_dir()
+        assert (load / "Inspur").is_dir()
+        assert set(PCLE_MANUFACTURERS) <= {p.name for p in pcle.iterdir() if p.is_dir()}
 
     def test_idempotent(self, monkeypatch, tmp_path):
         backup = tmp_path / "fru_backup"
         logs = tmp_path / "logs"
+        pcle = tmp_path / "PCLE"
+        load = tmp_path / "_internal" / "PCLE"
         monkeypatch.setattr(config_mod, "BACKUP_DIR", str(backup))
         monkeypatch.setattr(config_mod, "LOG_DIR", str(logs))
+        monkeypatch.setattr(config_mod, "TOPO_CACHE_DIR", str(backup / "topo_cache"))
+        monkeypatch.setattr(config_mod, "PCLE_DIR", str(pcle))
+        monkeypatch.setattr(config_mod, "pcle_load_dir", lambda: str(load))
         init_runtime_dirs()
         (backup / "existing.bin").write_bytes(b"\x00")
+        (pcle / "Inspur" / "keep.bin").write_bytes(b"\x00")
         init_runtime_dirs()
         assert (backup / "existing.bin").exists()
+        assert (pcle / "Inspur" / "keep.bin").exists()
+        assert (load / "Inspur" / "keep.bin").exists()
 
+
+class TestPcleLayout:
+    def test_sync_copies_and_prunes(self, monkeypatch, tmp_path):
+        user = tmp_path / "PCLE"
+        load = tmp_path / "_internal" / "PCLE"
+        monkeypatch.setattr(config_mod, "PCLE_DIR", str(user))
+        monkeypatch.setattr(config_mod, "pcle_load_dir", lambda: str(load))
+        (user / "Inspur").mkdir(parents=True)
+        (user / "Inspur" / "S1.bin").write_bytes(b"\x01")
+        stale = load / "FOXCONN" / "old.bin"
+        stale.parent.mkdir(parents=True)
+        stale.write_bytes(b"\x02")
+        copied = sync_pcle_user_to_load()
+        assert copied >= 1
+        assert (load / "Inspur" / "S1.bin").read_bytes() == b"\x01"
+        assert not stale.exists()
+
+    def test_resolve_pcle_dirs_is_load_folder(self, monkeypatch, tmp_path):
+        load = tmp_path / "_internal" / "PCLE"
+        load.mkdir(parents=True)
+        monkeypatch.setattr(config_mod, "pcle_load_dir", lambda: str(load))
+        assert config_mod.resolve_pcle_dirs() == [os.path.normpath(str(load))]
+
+    def test_load_dir_under_internal_when_frozen(self, monkeypatch, tmp_path):
+        bundled = tmp_path / "bundle"
+        bundled.mkdir()
+        monkeypatch.setattr(config_mod, "bundled_dir", lambda: str(bundled))
+        assert config_mod.pcle_load_dir() == os.path.normpath(os.path.join(str(bundled), "PCLE"))
 
 class TestResolveIpmitoolPath:
     def test_prefers_ipmitool_subfolder(self, monkeypatch, tmp_path):

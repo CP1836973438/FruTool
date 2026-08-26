@@ -26,7 +26,7 @@ Item {
                    ? swapVm.swapAutoStatus
                    : "等待新主板 BMC 上线…"
         case "cloning":
-            return "正在克隆 FRU 并还原 SN…"
+            return "正在克隆 FRU 并还原新板 SN/PN…"
         case "done":
             return "自动换板流程已完成。"
         default:

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 6.0.0 — 2026-08-26
+
+- 启动在 exe 旁自建 `PCLE/<厂商>/`，拓扑库同步到 `_internal/PCLE/` 加载；打包不再带出厂压缩包。卡片上的厂商/机型按厂家文件夹填写
+- 换板克隆（手动与自动同一套逻辑）：始终还原新板 Board Serial；新旧主板 Board Part Number 不一致时再写回新板 PN
+- FRU 字段页底部按钮与日志条增加间距
+- 破坏性：现场拓扑库需自行放入 `PCLE/<厂商>/`，升级包不再内置出厂压缩包
+
 ## 5.5.1 — 2026-08-25
 
 - 关于对话框与 exe 属性备注增加联系邮箱
