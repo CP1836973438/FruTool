@@ -12,6 +12,7 @@ logs/
 *.log
 fru_backup/
 _internal/
+PCLE/
 .pytest_cache/
 .coverage
 

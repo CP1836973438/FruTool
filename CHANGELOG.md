@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 6.0.2 — 2026-08-31
+
+- 文档：去掉重复的教程 HTML/PDF/英文副本，现场手册只保留 `docs/使用手册.md` 与 `docs/使用说明手册.md`
+- 仓库：不再跟踪 `PCLE/`（现场拓扑库只放本机，不上传 GitHub）
+- 破坏性：无
+
 ## 6.0.1 — 2026-08-31
 
 - 文档：FRU 字段刷写说明补充「连上 BMC 后字段框会读取并展示当前板 FRU 值」

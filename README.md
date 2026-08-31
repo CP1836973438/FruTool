@@ -2,9 +2,9 @@
 
 Windows 桌面工具，用于 BMC/IPMI 连接、FRU 读写、主板手动/自动换板、PCIe 拓扑 EEPROM 写入等现场硬件运维。
 
-**当前版本：** 6.0.1
+**当前版本：** 6.0.2
 
-详细变更见 [CHANGELOG.md](CHANGELOG.md)。现场操作见 **[使用手册](docs/使用手册.md)**（Markdown 图文）或 **[使用说明手册](docs/使用说明手册.md)**（纯文字详版）。另有 [HTML](docs/使用教程手册.html) / [PDF](docs/使用教程手册.pdf)。
+详细变更见 [CHANGELOG.md](CHANGELOG.md)。现场操作见 **[使用手册](docs/使用手册.md)**（Markdown 图文）或 **[使用说明手册](docs/使用说明手册.md)**（纯文字详版）。
 
 ## 功能概览
 
