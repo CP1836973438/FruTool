@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FRU 自动化工具 — 图文使用教程（6.0.0）</title>
+  <title>FRU 自动化工具 — 图文使用教程（6.0.1）</title>
   <style>
     :root {
       --bg: #f4f5f7;
@@ -145,7 +145,7 @@
 <body>
   <header>
     <h1>FRU 自动化工具 — 图文使用教程</h1>
-    <p>适用版本 6.0.0 · 多功能工具：连接为唯一公共第一步，换板 / FRU / 拓扑可任选</p>
+    <p>适用版本 6.0.1 · 多功能工具：连接为唯一公共第一步，换板 / FRU / 拓扑可任选</p>
     <p>截图为演示界面示意 · 现场请接真实 BMC</p>
   </header>
   <nav class="toc">
@@ -171,7 +171,7 @@
         <tbody>
           <tr><td><strong>连接与网络</strong></td><td>网卡、DHCP、旧/新板账号、BMC 是否在线</td><td>所有写操作前的公共前提</td></tr>
           <tr><td><strong>换板流程</strong></td><td>旧板 FRU 备份 → 换板 → 克隆并还原新板 SN（PN 不同时一并还原）</td><td>主板更换、身份迁移</td></tr>
-          <tr><td><strong>FRU 字段刷写</strong></td><td>按字段读写 Chassis / Board / Product</td><td>改个别字段、核对信息</td></tr>
+          <tr><td><strong>FRU 字段刷写</strong></td><td>读取当前板 FRU 并在字段框展示，再按字段改 Chassis / Board / Product</td><td>改个别字段、核对信息</td></tr>
           <tr><td><strong>PCIe 拓扑刷写</strong></td><td>拓扑 .bin 写入 EEPROM（0x7E00）</td><td>补拓扑、按机型刷拓扑</td></tr>
         </tbody>
       </table>
@@ -299,16 +299,16 @@
     <section id="fru">
       <h2><span class="pill">第二步 B</span> FRU 字段刷写</h2>
       <h3>功能介绍</h3>
-      <p>针对<strong>当前在线 BMC</strong> 做字段级读写（非整包换板）：Chassis / Board / Product 分组编辑；只刷写非空字段；可重置未提交编辑。</p>
+      <p>针对<strong>当前在线 BMC</strong> 做字段级读写（非整包换板）：Chassis / Board / Product 分组编辑。BMC 连上后会自动读取当前板 FRU，并在各<strong>字段框里用灰字展示现有值</strong>，便于核对。灰字只是展示，不会被当成写入内容；要改哪个字段，在对应框里输入新值。只刷写你填了内容的格子；可重置未提交编辑。</p>
       <figure>
         <img src="images/manual/02-fru.png" alt="FRU 字段刷写" />
-        <figcaption>图 3 · FRU：读取、编辑、刷写</figcaption>
+        <figcaption>图 3 · FRU：字段框展示当前值，再编辑、刷写</figcaption>
       </figure>
       <h3>操作流程</h3>
       <ol>
-        <li>连接已就绪</li>
-        <li>进入 FRU 页 →「尝试读取 FRU」</li>
-        <li>修改需要的字段（空字段不会被刷）</li>
+        <li>连接已就绪（BMC 在线）</li>
+        <li>进入 FRU 页，等字段框出现当前板 FRU 值（灰字）。若没有，稍等或点「尝试读取 FRU」</li>
+        <li>在需要改的框里输入新值（空字段不会被刷）</li>
         <li>「刷写所有非空字段」→ 看 FRU 日志</li>
         <li>放弃编辑用「重置」</li>
       </ol>
@@ -424,7 +424,7 @@
     </section>
   </main>
   <footer>
-    FRU 自动化工具 v6.0.0 · Ctrl+P 可导出 PDF · 详细文字见「使用说明手册.md」
+    FRU 自动化工具 v6.0.1 · Ctrl+P 可导出 PDF · 详细文字见「使用说明手册.md」
   </footer>
 </body>
 </html>

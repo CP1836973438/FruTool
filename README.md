@@ -1,28 +1,29 @@
 # FruTool — FRU 自动化整合工具
 
-Windows 桌面工具，用于 BMC/IPMI 连接、FRU 读写、主板自动/手动换板、PCIe 拓扑 EEPROM 写入等硬件运维场景。
+Windows 桌面工具，用于 BMC/IPMI 连接、FRU 读写、主板手动/自动换板、PCIe 拓扑 EEPROM 写入等现场硬件运维。
 
-**当前版本：** 5.5.1
+**当前版本：** 6.0.1
+
+详细变更见 [CHANGELOG.md](CHANGELOG.md)。现场操作见 **[使用手册](docs/使用手册.md)**（Markdown 图文）或 **[使用说明手册](docs/使用说明手册.md)**（纯文字详版）。另有 [HTML](docs/使用教程手册.html) / [PDF](docs/使用教程手册.pdf)。
 
 ## 功能概览
 
+四个模块彼此独立。凡访问 BMC，须先完成 **连接与网络**；换板 / FRU / 拓扑无强制先后。
+
 | 模块 | 说明 |
 |------|------|
-| **连接** | BMC 网络配置、DHCP 服务、在线探测、凭据管理 |
-| **FRU** | 读取 / 批量写入 FRU 字段、备份与恢复 |
-| **换板** | 自动换板流程（SN 确认 → 导出 → 轮询 → 克隆）；手动换板 Step1/Step2 |
-| **拓扑** | PCIe 拓扑 EEPROM：PCLE 压缩包 + 散落 .bin 索引与刷写 |
-| **终端** | 内置 IPMI 命令终端与补全 |
-
-现场操作请先看 **[使用说明手册](docs/使用说明手册.md)**（连接、换板、拓扑脚本选择与注意点）。  
-带界面截图的入门教程：**[使用教程手册](docs/使用教程手册.md)**（另有 [HTML 版](docs/使用教程手册.html) 可双击打开）。
+| **连接** | 本机网卡、内置 DHCP（专给 BMC 分地址）、在线探测、旧/新板凭据。底栏 BMC 地址变蓝后可开网页并复制对应密码 |
+| **换板** | 旧板 FRU 备份 → 换板 → 克隆。始终还原新板 Board Serial；新旧主板 Board Part Number 不一致时再写回新板 PN。手动与自动同一套逻辑 |
+| **FRU** | 连上 BMC 后字段框用灰字展示当前板 FRU；只刷写你新填的内容 |
+| **拓扑** | 把 `.bin` 写入 EEPROM（0x7E00）。自己的文件放 exe 旁 `PCLE/<厂商>/`，程序同步到 `_internal/PCLE/` 再加载。打包不再带出厂压缩包 |
+| **终端** | 底栏日志条展开右侧面板（全部 / DHCP / FRU / 拓扑）；底部可发 IPMI 或 Shell |
 
 ## 环境要求
 
 - **操作系统：** Windows 10/11（需管理员权限，启动时自动 UAC 提权）
-- **Python：** 3.10+
+- **Python：** 3.10+（开发或打包版跑拓扑脚本时需要）
 - **运行时依赖（非 pip）：**
-  - `ipmitool/` 目录 — 内含 `ipmitool.exe`、`PcieEEpromTool.py` 及其依赖文件（开发/打包源目录）
+  - `ipmitool/` — `ipmitool.exe`、`PcieEEpromTool.py` 及依赖
   - 也可通过环境变量 `FRUTOOL_IPMITOOL` 指定 exe 完整路径
 
 **打包版资源查找顺序：** `FRUTOOL_IPMITOOL` → exe 同目录 `ipmitool/`（可覆盖）→ `_internal/ipmitool` 内置 → 系统 PATH
@@ -30,19 +31,14 @@ Windows 桌面工具，用于 BMC/IPMI 连接、FRU 读写、主板自动/手动
 ## 快速开始
 
 ```powershell
-# 1. 创建虚拟环境
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-
-# 2. 安装依赖（任选其一）
 pip install -r requirements.txt
-# 或从 pyproject.toml 安装（推荐）
-pip install -e .
-
-# 3. 将 ipmitool 文件夹（含 ipmitool.exe 及依赖）放到项目根目录
-# 4. 启动
+# 将 ipmitool 文件夹（含 ipmitool.exe 及依赖）放到项目根目录
 python fru_tool.py
 ```
+
+现场使用请运行打包目录里的 `FRUTool.exe`（整个 `FRUTool` 文件夹一起拷贝，不要只拷 exe）。
 
 ## 开发与测试
 
@@ -58,45 +54,42 @@ $env:FRUTOOL_SKIP_ADMIN = "1"
 python -m pytest tests/test_smoke.py -v -m smoke
 ```
 
+测换板流程须清掉 `FRUTOOL_DEMO_ALL` / `FRUTOOL_DEMO_SWAP`，否则会走演示桩。
+
 ## 打包发布
 
+必须用**只装过 `requirements.txt`** 的纯净环境（推荐 `.venv-pack/`），不要拿日常混装过杂包的 `.venv` 打现场包。
+
 ```powershell
-# 编译 QML 着色器（修改 .frag 后需要）
-.\scripts\compile_shaders.ps1
-
-# 确保项目根目录存在 ipmitool/（含 ipmitool.exe）；PcieEEpromTool.py 放在 ipmitool/ 或项目根（打包时复制进 ipmitool/）
-
-# PyInstaller 打包（onedir → dist/FRUTool/）
-pyinstaller --noconfirm --clean FRUTool.spec
+python -m venv .venv-pack
+.\.venv-pack\Scripts\pip install -r requirements.txt
+.\.venv-pack\Scripts\pyinstaller --clean --noconfirm FRUTool.spec
 ./scripts/verify_dist.ps1
 ```
 
-发布物为 **`dist/FRUTool/` 整个文件夹**（含 `FRUTool.exe` 与 `_internal/`）。  
-更换 ipmitool 或拓扑脚本时，可将新版放在 **exe 同目录** 覆盖内置，无需重打包。
+发布物为 **`dist/FRUTool/` 整个文件夹**（含 `FRUTool.exe` 与 `_internal/`）。
+
+- 拓扑脚本：放到 exe 旁 `ipmitool/` 即可覆盖内置，无需重打包
+- 拓扑 `.bin`：放到 exe 旁 `PCLE/<厂商>/`（启动时自动建厂商目录），不要放进 `_internal/PCLE/`
+- 打包校验会拒绝把出厂 zip/7z/rar 打进 `_internal/PCLE/`
 
 ## 目录结构
 
 ```
 FruTool/
 ├── fru_tool.py              # 入口脚本
-├── pyproject.toml           # 项目元数据与依赖（canonical）
+├── pyproject.toml           # 项目元数据与依赖
 ├── FRUTool.spec             # PyInstaller 配置
-├── requirements.txt         # 运行时依赖（指向 pyproject.toml）
-├── requirements-dev.txt     # 开发依赖（editable + dev extras）
-├── frutool/
-│   ├── main.py              # 应用启动（QML 引擎、ViewModel 注册）
-│   ├── config.py            # 常量、路径、超时配置
-│   ├── domain/              # 业务逻辑（无 Qt 依赖）
-│   ├── presentation/        # Controller / ViewModel / Service / QML 桥接
-│   ├── infrastructure/      # 网络、Worker、Shell、日志
-│   ├── theme/               # 设计 token
-│   └── qml/FruTool/         # QML 界面（pages / components / dialogs）
-├── scripts/
-│   ├── compile_shaders.ps1  # GLSL → .qsb 编译
-│   └── verify_dist.ps1      # PyInstaller 产物校验
-├── .github/workflows/ci.yml # GitHub Actions CI
-├── fru_backup/              # FRU 备份与换板会话（运行时生成）
-└── logs/                    # 会话日志（运行时生成）
+├── fru_file_info.txt        # exe 文件属性（版号随产品真源）
+├── requirements.txt         # 运行时 + 打包依赖
+├── requirements-dev.txt     # 开发依赖
+├── frutool/                 # 应用（真源 __version__ 在 frutool/__init__.py）
+├── docs/                    # 使用手册、架构与上下文
+├── scripts/                 # 校验、演示、截图等
+├── ipmitool/                # ipmitool 与拓扑脚本（开发源目录）
+├── PCLE/                    # 运行时：用户投放拓扑库（按厂商子目录）
+├── fru_backup/              # 运行时：FRU 备份与换板会话
+└── logs/                    # 运行时：会话日志
 ```
 
 ## 架构
@@ -105,16 +98,9 @@ FruTool/
 QML View  →  ViewModel  →  Controller  →  Service  →  Domain  →  Infrastructure
 ```
 
-- **Domain 层** 保持纯 Python，便于单元测试（如 `domain/swap/auto.py`）
+- **Domain 层** 保持纯 Python，便于单元测试
 - **Presentation 层** 负责 Qt 信号槽、QML 绑定与后台任务调度
 - **Infrastructure 层** 封装 subprocess、网络 IO、线程池
-
-## 运行时数据
-
-| 路径 | 用途 |
-|------|------|
-| `fru_backup/` | FRU bin 备份、换板会话 JSON、网卡 IP 备份 |
-| `logs/` | 按日期滚动的会话日志 |
 
 ## 许可证
 

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 6.0.1 — 2026-08-31
+
+- 文档：FRU 字段刷写说明补充「连上 BMC 后字段框会读取并展示当前板 FRU 值」
+- 文档：提供 Markdown 使用手册（`docs/使用手册.md`）
+- 仓库：不再跟踪 `.github/workflows` 与 `.vscode`
+- 破坏性：无
+
 ## 6.0.0 — 2026-08-26
 
 - 启动在 exe 旁自建 `PCLE/<厂商>/`，拓扑库同步到 `_internal/PCLE/` 加载；打包不再带出厂压缩包。卡片上的厂商/机型按厂家文件夹填写

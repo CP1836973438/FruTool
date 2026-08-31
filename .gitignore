@@ -15,5 +15,10 @@ _internal/
 .pytest_cache/
 .coverage
 
-# IDE
+# IDE / CI 本地文件（不上传 GitHub）
 .idea/
+.vscode/
+.github/workflows/
+
+# Local pack leftovers
+dist_demo/
